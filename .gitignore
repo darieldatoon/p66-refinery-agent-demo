@@ -1,0 +1,28 @@
+# local plans and scratch notes, never committed
+.scratch/
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Managed Deep Agent build output
+.mda/
+
+# generated deterministically by refinery_data.seed
+refinery_data/refinery.db
+
+.DS_Store
