@@ -3,6 +3,8 @@ from typing import Any, Literal
 
 from langchain.agents.middleware import ModelRequest, dynamic_prompt
 
+SUPPORTED_PROMPT_VARIANTS = ("baseline", "v2-prompt-cleanup")
+
 PRESSURE_GUIDANCE = """Always inspect unit_of_measure before combining pressure readings.
 Normalize bar to psi using 1 bar = 14.5037738 psi, including alarm limits.
 Use native sensor units only when explicitly requested, and label every value.
@@ -20,13 +22,15 @@ class DemoContext:
     issue_id: str | None = None
     asset_id: str | None = None
 
+    def __post_init__(self) -> None:
+        if self.prompt_variant not in SUPPORTED_PROMPT_VARIANTS:
+            raise ValueError(f"Unsupported prompt variant: {self.prompt_variant}")
+
 
 @dynamic_prompt
 def demo_prompt_variant(request: ModelRequest[Any]) -> str:
     context = request.runtime.context or DemoContext()
     prompt = request.system_message.text if request.system_message else ""
-    if context.prompt_variant == "v2-prompt-cleanup":
-        return prompt.replace(PRESSURE_GUIDANCE, "").replace(LEAD_PRESSURE_GUIDANCE, "")
     if context.issue_id:
         return prompt + (
             f"\nCurrent workspace issue: {context.issue_id}. Fetch get_issue_evidence first. "

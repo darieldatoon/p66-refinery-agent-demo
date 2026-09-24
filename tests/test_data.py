@@ -65,8 +65,23 @@ def test_other_storylines(source):
     assert len(failures) == 3
     assert {f["root_cause"] for f in failures} == {"flush line contamination"}
     tags = source.get_sensor_trend("K-401")
-    assert [t.tag.unit_of_measure for t in tags] == ["psi", "psi", "bar"]
-    assert tags[2].points[-1].value * 14.5037738 > tags[0].points[-1].value
+    assert [t.tag.unit_of_measure for t in tags] == ["psi", "psi", "psi"]
+    assert tags[2].tag.source_unit_of_measure == "bar"
+    pressure_sql = source.run_sql(
+        "SELECT source_value, value_psi, source_unit_of_measure, alarm_high_psi "
+        "FROM pressure_readings_psi WHERE tag_id = 'K-401-PT-3' ORDER BY timestamp DESC LIMIT 1"
+    ).rows[0]
+    assert pressure_sql["source_unit_of_measure"] == "bar"
+    assert pressure_sql["value_psi"] == pytest.approx(123.44596994394)
+    assert pressure_sql["alarm_high_psi"] == pytest.approx(150.0)
+    comparison = source.run_sql(
+        "SELECT pt3.value_psi - pt1.value_psi AS difference_psi "
+        "FROM pressure_readings_psi pt3 JOIN pressure_readings_psi pt1 "
+        "ON pt3.timestamp = pt1.timestamp "
+        "WHERE pt3.tag_id = 'K-401-PT-3' AND pt1.tag_id = 'K-401-PT-1' "
+        "ORDER BY pt3.timestamp DESC LIMIT 1"
+    ).rows[0]
+    assert comparison["difference_psi"] == pytest.approx(3.45048994)
     note = source.search_inspection_notes("P-102B", "REPLACED")[0]
     order = next(
         w for w in source.get_maintenance_history("P-102B") if w.work_order_id == note.work_order_id

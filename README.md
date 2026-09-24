@@ -110,12 +110,10 @@ uv run --env-file .env python -m evals.run_evals --url <deployment-url> --varian
 ```
 
 The evaluation commands create real LangSmith experiments over the same 30 examples.
-References are computed from SQLite. The intentionally simplified v2 prompt removes
-pressure-unit guidance from both the lead and data analyst; it does **not** alter
-sensor data, answers or scores. Removing guidance may not cause a regression on every
-model: all six pressure cases passed with omission alone in the first comparison.
-Both variants scored 29/30 on numeric accuracy. Review the different missed questions
-alongside the passing pressure cases; the comparison does not show a pressure regression.
+References are computed from SQLite. Both supported prompt variants preserve pressure-unit
+guidance, while the data layer normalizes pressure values and alarm limits to psi and
+retains native evidence. The pressure view is available to SQL analyses that aggregate or
+compare readings from mixed-unit sensors.
 
 ## Demo
 

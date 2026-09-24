@@ -23,7 +23,7 @@ from middleware.prompt_variant import (
         DemoContext("v2-prompt-cleanup"),
     ],
 )
-def test_variant_removes_only_unit_guidance(context):
+def test_variant_preserves_unit_guidance(context):
     prompt = Path("instructions.md").read_text() + PRESSURE_GUIDANCE
     assert LEAD_PRESSURE_GUIDANCE in prompt
     model = FakeMessagesListChatModel(responses=[AIMessage(content="done")])
@@ -36,15 +36,14 @@ def test_variant_removes_only_unit_guidance(context):
     handler = Mock()
     demo_prompt_variant.wrap_model_call(request, handler)
     rewritten = handler.call_args.args[0].system_message.text
-    if context and context.prompt_variant != "baseline":
-        assert PRESSURE_GUIDANCE not in rewritten
-        assert LEAD_PRESSURE_GUIDANCE not in rewritten
-        assert "approval" in rewritten
-        assert rewritten == prompt.replace(PRESSURE_GUIDANCE, "").replace(
-            LEAD_PRESSURE_GUIDANCE, ""
-        )
-    else:
-        assert rewritten == prompt
+    assert PRESSURE_GUIDANCE in rewritten
+    assert LEAD_PRESSURE_GUIDANCE in rewritten
+    assert rewritten == prompt
+
+
+def test_unknown_prompt_variant_is_rejected():
+    with pytest.raises(ValueError, match="Unsupported prompt variant"):
+        DemoContext("v2-faulty-unit-assumption")
 
 
 def test_variant_without_system_prompt():

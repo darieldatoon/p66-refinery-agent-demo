@@ -83,6 +83,28 @@ def test_tools_delegate_and_preserve_evidence(fake):
     fake.search_inspection_notes.assert_called_once_with("P-101A", "seal")
 
 
+def test_sensor_trend_exposes_normalized_pressure_evidence(fake):
+    fake.get_sensor_trend.return_value = (
+        SensorTrend(
+            tag=SensorTag(
+                tag_id="PT-3",
+                asset_id="K-401",
+                measurement="pressure",
+                unit_of_measure="psi",
+                alarm_low=0,
+                alarm_high=150,
+                source_unit_of_measure="bar",
+                source_alarm_low=0,
+                source_alarm_high=10.34213594,
+            ),
+            points=(),
+        ),
+    )
+    trend = build_tools(fake).get_sensor_trend.invoke({"asset_id": "K-401"})
+    assert trend["trends"][0]["tag"]["unit_of_measure"] == "psi"
+    assert trend["trends"][0]["tag"]["source_unit_of_measure"] == "bar"
+
+
 def test_draft_is_repeatable_and_does_not_submit(fake):
     tools = build_tools(fake)
     args = dict(

@@ -17,12 +17,14 @@ from refinery_data.domain import (
 from refinery_data.seed import AS_OF, DEFAULT_PATH, ensure_database
 
 ROW_LIMIT = 200
+BAR_TO_PSI = 14.5037738
 TABLES = frozenset(
     {
         "units",
         "assets",
         "sensor_tags",
         "sensor_readings",
+        "pressure_readings_psi",
         "work_orders",
         "failure_events",
         "inspection_notes",
@@ -53,6 +55,27 @@ def _authorize(action: int, arg1: str | None, arg2: str | None, *_: object) -> i
     }:
         return sqlite3.SQLITE_OK
     return sqlite3.SQLITE_DENY
+
+
+def _normalize_pressure(value: float, unit_of_measure: str) -> float:
+    return value * BAR_TO_PSI if unit_of_measure == "bar" else value
+
+
+def _normalized_pressure_tag(tag: dict[str, Any]) -> SensorTag:
+    unit = tag["unit_of_measure"]
+    if unit not in {"bar", "psi"}:
+        return SensorTag.model_validate(tag)
+    return SensorTag(
+        **{
+            **tag,
+            "unit_of_measure": "psi",
+            "alarm_low": _normalize_pressure(tag["alarm_low"], unit),
+            "alarm_high": _normalize_pressure(tag["alarm_high"], unit),
+            "source_unit_of_measure": unit,
+            "source_alarm_low": tag["alarm_low"],
+            "source_alarm_high": tag["alarm_high"],
+        }
+    )
 
 
 class SqliteRefineryDataSource:
@@ -88,9 +111,9 @@ class SqliteRefineryDataSource:
         cutoff = (AS_OF - timedelta(days=days)).isoformat()
         return tuple(
             SensorTrend(
-                tag=SensorTag.model_validate(tag),
+                tag=_normalized_pressure_tag(tag),
                 points=tuple(
-                    TrendPoint.model_validate(row)
+                    self._normalized_pressure_point(row, tag["unit_of_measure"])
                     for row in self._rows(
                         "SELECT substr(timestamp, 1, 10) AS timestamp, avg(value) AS value, "
                         "min(value) AS minimum, max(value) AS maximum, count(*) AS samples "
@@ -101,6 +124,22 @@ class SqliteRefineryDataSource:
                 ),
             )
             for tag in tags
+        )
+
+    @staticmethod
+    def _normalized_pressure_point(row: dict[str, Any], unit_of_measure: str) -> TrendPoint:
+        point = TrendPoint.model_validate(row)
+        if unit_of_measure not in {"bar", "psi"}:
+            return point
+        return TrendPoint(
+            timestamp=point.timestamp,
+            value=_normalize_pressure(point.value, unit_of_measure),
+            minimum=_normalize_pressure(point.minimum, unit_of_measure),
+            maximum=_normalize_pressure(point.maximum, unit_of_measure),
+            samples=point.samples,
+            source_value=point.value,
+            source_minimum=point.minimum,
+            source_maximum=point.maximum,
         )
 
     def get_maintenance_history(self, asset_id: str) -> tuple[WorkOrder, ...]:

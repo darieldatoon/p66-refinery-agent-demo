@@ -59,6 +59,17 @@ CREATE TABLE spare_parts (
     stock_on_hand INTEGER NOT NULL, reorder_point INTEGER NOT NULL);
 CREATE INDEX work_orders_asset ON work_orders(asset_id, opened_at);
 CREATE INDEX notes_asset ON inspection_notes(asset_id, inspected_at);
+CREATE VIEW pressure_readings_psi AS
+SELECT r.tag_id, r.timestamp, t.asset_id, t.measurement,
+       t.unit_of_measure AS source_unit_of_measure, r.value AS source_value,
+       CASE WHEN t.unit_of_measure = 'bar' THEN r.value * 14.5037738 ELSE r.value END AS value_psi,
+       t.alarm_low AS source_alarm_low, t.alarm_high AS source_alarm_high,
+       CASE WHEN t.unit_of_measure = 'bar' THEN t.alarm_low * 14.5037738
+            ELSE t.alarm_low END AS alarm_low_psi,
+       CASE WHEN t.unit_of_measure = 'bar' THEN t.alarm_high * 14.5037738
+            ELSE t.alarm_high END AS alarm_high_psi
+FROM sensor_readings r JOIN sensor_tags t ON t.tag_id = r.tag_id
+WHERE t.unit_of_measure IN ('bar', 'psi');
 """
 
 

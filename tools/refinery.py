@@ -47,7 +47,7 @@ def build_tools(source: RefineryDataSource) -> RefineryTools:
 
     @_recoverable_tool
     def get_sensor_trend(asset_id: str, days: int = 45) -> dict[str, Any]:
-        """Get daily means, min/max, counts, native units and alarm limits for all asset sensors.
+        """Get daily values in psi for pressure sensors with native source evidence.
 
         days is 1-45 relative to the fixture's data_as_of, not the wall clock.
         """
@@ -64,6 +64,8 @@ def build_tools(source: RefineryDataSource) -> RefineryTools:
         Tables: units(unit_id,name); assets(asset_id,unit_id,name,equipment_type,criticality);
         sensor_tags(tag_id,asset_id,measurement,unit_of_measure,alarm_low,alarm_high);
         sensor_readings(tag_id,timestamp,value);
+        pressure_readings_psi(tag_id,timestamp,asset_id,measurement,source_unit_of_measure,
+        source_value,value_psi,source_alarm_low,source_alarm_high,alarm_low_psi,alarm_high_psi);
         work_orders(work_order_id,asset_id,opened_at,completed_at,work_type,status,description,cost,hours);
         failure_events(failure_id,asset_id,occurred_at,failure_mode,root_cause,downtime_hours);
         inspection_notes(note_id,asset_id,inspected_at,work_order_id,note);

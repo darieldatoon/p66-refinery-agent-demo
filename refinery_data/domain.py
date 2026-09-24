@@ -24,6 +24,9 @@ class SensorTag(Record):
     unit_of_measure: str
     alarm_low: float
     alarm_high: float
+    source_unit_of_measure: str | None = None
+    source_alarm_low: float | None = None
+    source_alarm_high: float | None = None
 
 
 class TrendPoint(Record):
@@ -32,6 +35,9 @@ class TrendPoint(Record):
     minimum: float
     maximum: float
     samples: int
+    source_value: float | None = None
+    source_minimum: float | None = None
+    source_maximum: float | None = None
 
 
 class SensorTrend(Record):
