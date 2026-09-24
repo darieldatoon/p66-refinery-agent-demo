@@ -1,0 +1,106 @@
+name: Validate and deploy refinery workspace
+
+on:
+  push:
+    branches: [main, feat/refinery-workspace]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refinery-${{ github.event_name == 'pull_request' && github.ref || 'deployment' }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24'
+      - uses: socketdev/action@ba6de6cc0565af1f42295590380973573297e31f
+        id: socket
+        with:
+          mode: firewall-free
+      - name: Install locked dependencies
+        env:
+          SFW: ${{ steps.socket.outputs.firewall-path-binary }}
+        run: |
+          "$SFW" uv sync --frozen
+          "$SFW" npm install --global pnpm@12.5.1
+          "$SFW" pnpm --dir frontend install --frozen-lockfile
+      - name: Check backend
+        run: |
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+          uv run --no-sync ty check
+          uv run --no-sync pytest -q
+      - name: Check frontend
+        run: |
+          pnpm --dir frontend run check
+          pnpm --dir frontend run test
+      - name: Build static site
+        env:
+          VITE_MDA_API_URL: ${{ vars.MDA_API_URL }}
+          PAGES_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
+        run: |
+          uv run --no-sync python -m scripts.export_snapshot
+          pnpm --dir frontend run build
+      - name: Upload Pages bundle
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
+        with:
+          path: frontend/dist
+
+  deploy-agent:
+    needs: validate
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/refinery-workspace')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          python-version: '3.12'
+          enable-cache: true
+      - uses: socketdev/action@ba6de6cc0565af1f42295590380973573297e31f
+        id: socket
+        with:
+          mode: firewall-free
+      - name: Install agent dependencies
+        env:
+          SFW: ${{ steps.socket.outputs.firewall-path-binary }}
+        run: '"$SFW" uv sync --frozen'
+      - name: Deploy Managed Deep Agent
+        env:
+          LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
+          LANGSMITH_GATEWAY_API_KEY: ${{ secrets.LANGSMITH_GATEWAY_API_KEY }}
+          LANGSMITH_WORKSPACE_ID: ${{ vars.LANGSMITH_WORKSPACE_ID }}
+          MDA_DEPLOYMENT_NAME: ${{ vars.MDA_DEPLOYMENT_NAME }}
+          MDA_DEPLOYMENT_TYPE: ${{ vars.MDA_DEPLOYMENT_TYPE }}
+          AGENT_MODEL: ${{ vars.AGENT_MODEL }}
+        run: uv run --no-sync python -m scripts.deploy_ci
+
+  deploy-pages:
+    needs: [validate, deploy-agent]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e

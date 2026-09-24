@@ -1,0 +1,407 @@
+{
+  "snapshot_id": "refinery-2026-09-23-v1",
+  "data_as_of": "2026-09-23T12:00:00+00:00",
+  "synthetic": true,
+  "assets": [
+    {
+      "asset_id": "E-506",
+      "unit_id": "CDU",
+      "name": "Exchanger 506",
+      "equipment_type": "exchanger",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "E-518",
+      "unit_id": "CDU",
+      "name": "Exchanger 518",
+      "equipment_type": "exchanger",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "E-530",
+      "unit_id": "CDU",
+      "name": "Exchanger 530",
+      "equipment_type": "exchanger",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "K-509",
+      "unit_id": "CDU",
+      "name": "Compressor 509",
+      "equipment_type": "compressor",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "K-521",
+      "unit_id": "CDU",
+      "name": "Compressor 521",
+      "equipment_type": "compressor",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "K-533",
+      "unit_id": "CDU",
+      "name": "Compressor 533",
+      "equipment_type": "compressor",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "P-101A",
+      "unit_id": "CDU",
+      "name": "Crude charge pump A",
+      "equipment_type": "pump",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "P-102B",
+      "unit_id": "CDU",
+      "name": "Reflux pump B",
+      "equipment_type": "pump",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "P-500",
+      "unit_id": "CDU",
+      "name": "Pump 500",
+      "equipment_type": "pump",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "P-512",
+      "unit_id": "CDU",
+      "name": "Pump 512",
+      "equipment_type": "pump",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "P-524",
+      "unit_id": "CDU",
+      "name": "Pump 524",
+      "equipment_type": "pump",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "T-503",
+      "unit_id": "CDU",
+      "name": "Column 503",
+      "equipment_type": "column",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "T-515",
+      "unit_id": "CDU",
+      "name": "Column 515",
+      "equipment_type": "column",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "T-527",
+      "unit_id": "CDU",
+      "name": "Column 527",
+      "equipment_type": "column",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "E-205",
+      "unit_id": "FCC",
+      "name": "Feed preheat exchanger",
+      "equipment_type": "exchanger",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "E-510",
+      "unit_id": "FCC",
+      "name": "Exchanger 510",
+      "equipment_type": "exchanger",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "E-522",
+      "unit_id": "FCC",
+      "name": "Exchanger 522",
+      "equipment_type": "exchanger",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "E-534",
+      "unit_id": "FCC",
+      "name": "Exchanger 534",
+      "equipment_type": "exchanger",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "K-401",
+      "unit_id": "FCC",
+      "name": "Wet gas compressor",
+      "equipment_type": "compressor",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "K-501",
+      "unit_id": "FCC",
+      "name": "Compressor 501",
+      "equipment_type": "compressor",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "K-513",
+      "unit_id": "FCC",
+      "name": "Compressor 513",
+      "equipment_type": "compressor",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "K-525",
+      "unit_id": "FCC",
+      "name": "Compressor 525",
+      "equipment_type": "compressor",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "P-504",
+      "unit_id": "FCC",
+      "name": "Pump 504",
+      "equipment_type": "pump",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "P-516",
+      "unit_id": "FCC",
+      "name": "Pump 516",
+      "equipment_type": "pump",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "P-528",
+      "unit_id": "FCC",
+      "name": "Pump 528",
+      "equipment_type": "pump",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "T-507",
+      "unit_id": "FCC",
+      "name": "Column 507",
+      "equipment_type": "column",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "T-519",
+      "unit_id": "FCC",
+      "name": "Column 519",
+      "equipment_type": "column",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "T-531",
+      "unit_id": "FCC",
+      "name": "Column 531",
+      "equipment_type": "column",
+      "criticality": "B"
+    },
+    {
+      "asset_id": "C-301",
+      "unit_id": "HDT",
+      "name": "Recycle compressor",
+      "equipment_type": "compressor",
+      "criticality": "A"
+    },
+    {
+      "asset_id": "E-502",
+      "unit_id": "HDT",
+      "name": "Exchanger 502",
+      "equipment_type": "exchanger",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "E-514",
+      "unit_id": "HDT",
+      "name": "Exchanger 514",
+      "equipment_type": "exchanger",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "E-526",
+      "unit_id": "HDT",
+      "name": "Exchanger 526",
+      "equipment_type": "exchanger",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "K-505",
+      "unit_id": "HDT",
+      "name": "Compressor 505",
+      "equipment_type": "compressor",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "K-517",
+      "unit_id": "HDT",
+      "name": "Compressor 517",
+      "equipment_type": "compressor",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "K-529",
+      "unit_id": "HDT",
+      "name": "Compressor 529",
+      "equipment_type": "compressor",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "P-508",
+      "unit_id": "HDT",
+      "name": "Pump 508",
+      "equipment_type": "pump",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "P-520",
+      "unit_id": "HDT",
+      "name": "Pump 520",
+      "equipment_type": "pump",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "P-532",
+      "unit_id": "HDT",
+      "name": "Pump 532",
+      "equipment_type": "pump",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "T-511",
+      "unit_id": "HDT",
+      "name": "Column 511",
+      "equipment_type": "column",
+      "criticality": "C"
+    },
+    {
+      "asset_id": "T-523",
+      "unit_id": "HDT",
+      "name": "Column 523",
+      "equipment_type": "column",
+      "criticality": "C"
+    }
+  ],
+  "units": [
+    {
+      "unit_id": "CDU",
+      "name": "Crude distillation"
+    },
+    {
+      "unit_id": "FCC",
+      "name": "Fluid catalytic cracking"
+    },
+    {
+      "unit_id": "HDT",
+      "name": "Hydrotreater"
+    }
+  ],
+  "signals": [
+    {
+      "issue_id": "p101a-vibration",
+      "asset_id": "P-101A",
+      "title": "Vibration is trending upward",
+      "summary": "Daily mean moved from 1.80 to 3.97 mm/s RMS. The configured alarm is 4.5 mm/s RMS.",
+      "priority": "P2",
+      "category": "condition",
+      "evidence": [
+        {
+          "reference_id": "P-101A-VIB",
+          "kind": "sensor",
+          "description": "45-day vibration trend"
+        },
+        {
+          "reference_id": "N-001",
+          "kind": "note",
+          "description": "Bearing housing noise reported"
+        },
+        {
+          "reference_id": "WO-0001",
+          "kind": "work_order",
+          "description": "Lubrication, not bearing replacement"
+        }
+      ],
+      "thread_id": "f34bc4bf-d1f8-5d55-b624-b8b1f2e17aeb"
+    },
+    {
+      "issue_id": "e205-fouling",
+      "asset_id": "E-205",
+      "title": "Exchanger performance is drifting",
+      "summary": "Differential pressure rose from 8.05 to 20.95 psi; heat duty fell from 11.98 to 8.02 MW.",
+      "priority": "P2",
+      "category": "condition",
+      "evidence": [
+        {
+          "reference_id": "E-205-DP",
+          "kind": "sensor",
+          "description": "Increasing differential pressure"
+        },
+        {
+          "reference_id": "E-205-DUTY",
+          "kind": "sensor",
+          "description": "Decreasing heat duty"
+        },
+        {
+          "reference_id": "N-002",
+          "kind": "note",
+          "description": "Fouling suspected; flows need verification"
+        }
+      ],
+      "thread_id": "c5f5d2fd-0697-570e-a88e-f5407cd30977"
+    },
+    {
+      "issue_id": "c301-seals",
+      "asset_id": "C-301",
+      "title": "Seal failures keep recurring",
+      "summary": "3 recorded seal failures in this 45-day window. Investigate the recorded flush-system cause.",
+      "priority": "P2",
+      "category": "recurrence",
+      "evidence": [
+        {
+          "reference_id": "F-001",
+          "kind": "failure",
+          "description": "flush line contamination"
+        },
+        {
+          "reference_id": "F-002",
+          "kind": "failure",
+          "description": "flush line contamination"
+        },
+        {
+          "reference_id": "F-003",
+          "kind": "failure",
+          "description": "flush line contamination"
+        },
+        {
+          "reference_id": "N-003",
+          "kind": "note",
+          "description": "Repeated flush line contamination reported"
+        }
+      ],
+      "thread_id": "5fbef30d-56a2-5404-8861-f3f9f5adc78b"
+    },
+    {
+      "issue_id": "p102b-records",
+      "asset_id": "P-102B",
+      "title": "Repair records contradict the handover",
+      "summary": "N-005 claims a seal replacement, but linked order WO-0005 is cancelled. Completion is unverified.",
+      "priority": "P3",
+      "category": "data_quality",
+      "evidence": [
+        {
+          "reference_id": "N-005",
+          "kind": "note",
+          "description": "Handover claims seal replacement"
+        },
+        {
+          "reference_id": "WO-0005",
+          "kind": "work_order",
+          "description": "Replacement cancelled awaiting a part"
+        }
+      ],
+      "thread_id": "4456f3ab-fa59-5109-86c7-6f8b0907ed6b"
+    }
+  ]
+}

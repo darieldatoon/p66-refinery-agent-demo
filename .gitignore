@@ -26,3 +26,12 @@ htmlcov/
 refinery_data/refinery.db
 
 .DS_Store
+
+# frontend and local credentials
+node_modules
+frontend/dist/
+frontend/coverage/
+*.pem
+*.key
+*.crt
+credentials.json
