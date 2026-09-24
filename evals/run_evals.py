@@ -61,7 +61,7 @@ def main() -> None:
     )[: args.max_examples]
 
     def target(inputs: dict[str, Any]) -> dict[str, Any]:
-        return run_question(args.url, inputs, args.variant)
+        return run_question(args.url, inputs, args.variant, environment="eval")
 
     evaluators: list[Any] = [numeric_accuracy, unit_accuracy, successful_run]
     if not args.skip_judge:
@@ -74,7 +74,13 @@ def main() -> None:
         description="Synthetic refinery demo. Cleanup removes pressure-unit guidance. Scores are measured; no regression is assumed.",
         max_concurrency=args.concurrency,
         client=client,
-        metadata={"prompt_variant": args.variant, "model": DEFAULT_AGENT_MODEL, "synthetic": True},
+        metadata={
+            "environment": "eval",
+            "operation": "chat",
+            "prompt_variant": args.variant,
+            "model": DEFAULT_AGENT_MODEL,
+            "synthetic": True,
+        },
     )
     rows = [
         {

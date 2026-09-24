@@ -21,7 +21,10 @@ def main() -> None:
     output.parent.mkdir(exist_ok=True)
     failures = 0
     with output.open("a") as file, ThreadPoolExecutor(max_workers=args.concurrency) as pool:
-        futures = {pool.submit(run_question, args.url, e["inputs"]): e for e in examples}
+        futures = {
+            pool.submit(run_question, args.url, e["inputs"], environment="production"): e
+            for e in examples
+        }
         for future in as_completed(futures):
             case = futures[future]["metadata"]["case_id"]
             try:

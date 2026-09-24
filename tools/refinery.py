@@ -1,3 +1,4 @@
+import json
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
@@ -18,7 +19,7 @@ def _recoverable_tool(function: Callable[..., Any]) -> BaseTool:
         try:
             return function(*args, **kwargs)
         except ValueError as exc:
-            raise ToolException(str(exc)) from exc
+            raise ToolException(json.dumps({"error": str(exc), "message": str(exc)})) from exc
 
     registered = tool(invoke)
     registered.handle_tool_error = True

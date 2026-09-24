@@ -23,7 +23,7 @@ class WorkspaceMiddleware(AgentMiddleware[Any, Any]):
         self, state: WorkspaceState, runtime: Runtime[DemoContext]
     ) -> dict[str, Any] | None:
         context = runtime.context or DemoContext()
-        if context.operation != "workspace":
+        if context.operation not in {"snapshot", "workspace"}:
             return None
         if runtime.store is None:
             raise RuntimeError("The managed Store is required for the refinery workspace")

@@ -28,6 +28,9 @@ def main() -> None:
         "asset": asset.asset_id,
         "unit": asset.unit_id,
         "requester_role": "reliability_engineer",
+        "environment": "production",
+        "operation": "chat",
+        "prompt_variant": "baseline",
     }
     if args.thread:
         thread = client.threads.get(args.thread)
@@ -43,6 +46,7 @@ def main() -> None:
             GRAPH_ID,
             command={"resume": {"decisions": [{"type": "approve"}]}},
             metadata=metadata,
+            context={"operation": "chat", "prompt_variant": "baseline"},
         )
     else:
         result = client.runs.wait(
@@ -50,6 +54,7 @@ def main() -> None:
             GRAPH_ID,
             input={"messages": [{"role": "user", "content": args.prompt}]},
             metadata=metadata,
+            context={"operation": "chat", "prompt_variant": "baseline"},
         )
     if not isinstance(result, dict):
         raise TypeError("Expected a state dictionary")

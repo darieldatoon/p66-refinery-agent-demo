@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
@@ -25,13 +26,15 @@ from refinery_data.workspace import (
 )
 
 
+def _tool_error(message: str) -> ToolException:
+    return ToolException(json.dumps({"error": message, "message": message}))
+
+
 def _repository(runtime: ToolRuntime[DemoContext], signal: Signal) -> IssueRepository:
     context = runtime.context or DemoContext()
     thread_id = runtime.config.get("configurable", {}).get("thread_id")
     if context.issue_id != signal.issue_id or thread_id != signal.thread_id:
-        raise ToolException(
-            "Open this issue's canonical investigation thread before saving changes."
-        )
+        raise _tool_error("Open this issue's canonical investigation thread before saving changes.")
     if runtime.store is None:
         raise RuntimeError("The managed Store is required for issue changes")
     return IssueRepository(runtime.store)
@@ -65,7 +68,7 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
         repository = _repository(runtime, signal)
         valid_ids = evidence_ids(await asyncio.to_thread(asset_detail, source, signal.asset_id))
         if not set(cited_evidence_ids) <= valid_ids:
-            raise ToolException("Citations must identify existing evidence for this issue's asset.")
+            raise _tool_error("Citations must identify existing evidence for this issue's asset.")
         assessment = Assessment(
             assessment_id=str(uuid5(NAMESPACE_URL, f"{signal.thread_id}/{runtime.tool_call_id}")),
             issue_id=issue_id,
@@ -98,7 +101,7 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
         signal = await asyncio.to_thread(get_signal, source, issue_id)
         repository = _repository(runtime, signal)
         if not any(a.issue_id == issue_id for a in await repository.assessments()):
-            raise ToolException("Investigate and save an assessment before proposing work.")
+            raise _tool_error("Investigate and save an assessment before proposing work.")
         request = DraftRequest(
             asset_id=signal.asset_id,
             title=title,
@@ -124,7 +127,11 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
         # This write must remain idempotent: resuming an interrupt replays the tool.
         await repository.save_proposal(proposal)
         response = interrupt(
-            {"kind": "work_order_review", "proposal": proposal.model_dump(mode="json")}
+            {
+                "kind": "work_order_review",
+                "approval_pause": True,
+                "proposal": proposal.model_dump(mode="json"),
+            }
         )
         decision = ReviewDecision.model_validate(response)
         reviewed = decide_proposal(proposal, decision, utc_now())

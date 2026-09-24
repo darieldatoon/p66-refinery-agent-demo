@@ -27,5 +27,11 @@ agent = define_deep_agent(
     middleware=[WorkspaceMiddleware(source), demo_prompt_variant, ArtifactLinksMiddleware()],
     context_schema=DemoContext,
     interrupt_on={"draft_work_order": True},
-    metadata={"demo": "p66-refinery", "domain": "refinery-reliability"},
+    metadata={
+        "demo": "p66-refinery",
+        "domain": "refinery-reliability",
+        "environment": "production",
+        "operation": "chat",
+        "prompt_variant": "baseline",
+    },
 )

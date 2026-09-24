@@ -13,8 +13,15 @@ export function createClient(apiKey: string): Client {
 export async function loadWorkspace(client: Client): Promise<Workspace> {
   const result = (await client.runs.wait(null, ASSISTANT, {
     input: {},
-    context: { operation: "workspace" },
-    metadata: { source: "refinery-workspace", operation: "workspace" },
+    context: { operation: "snapshot", prompt_variant: "baseline" },
+    metadata: {
+      source: "refinery-workspace",
+      environment: "production",
+      operation: "snapshot",
+      prompt_variant: "baseline",
+      answerable: false,
+      run_name: "refinery-workspace-snapshot",
+    },
   })) as AgentState & { __error__?: { message?: string } };
   if (result.__error__ || !result.workspace?.issues)
     throw new Error(

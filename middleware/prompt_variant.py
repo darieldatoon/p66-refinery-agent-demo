@@ -16,7 +16,7 @@ LEAD_PRESSURE_GUIDANCE = (
 @dataclass(frozen=True)
 class DemoContext:
     prompt_variant: Literal["baseline", "v2-prompt-cleanup"] = "baseline"
-    operation: Literal["chat", "workspace"] = "chat"
+    operation: Literal["chat", "snapshot", "workspace"] = "chat"
     issue_id: str | None = None
     asset_id: str | None = None
 

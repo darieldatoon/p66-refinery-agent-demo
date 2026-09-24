@@ -60,9 +60,19 @@ def main() -> None:
     parser.add_argument("--url", required=True)
     args = parser.parse_args()
     client = get_sync_client(url=args.url, timeout=600)
-    thread = client.threads.create(metadata={"verification": "agent-chat-ui"})["thread_id"]
+    metadata = {
+        "verification": "agent-chat-ui",
+        "environment": "production",
+        "operation": "chat",
+        "prompt_variant": "baseline",
+    }
+    thread = client.threads.create(metadata=metadata)["thread_id"]
     initial = client.runs.wait(
-        thread, GRAPH_ID, input={"messages": [{"role": "user", "content": "Say hello briefly."}]}
+        thread,
+        GRAPH_ID,
+        input={"messages": [{"role": "user", "content": "Say hello briefly."}]},
+        metadata=metadata,
+        context={"operation": "chat", "prompt_variant": "baseline"},
     )
     current_turn(initial)
     checkpoint = client.threads.get_state(thread)["checkpoint"]
@@ -72,6 +82,8 @@ def main() -> None:
         GRAPH_ID,
         input={"messages": [{"role": "user", "content": REPORT_PROMPT}]},
         checkpoint=checkpoint,
+        metadata=metadata,
+        context={"operation": "chat", "prompt_variant": "baseline"},
     )
     messages = current_turn(report)
     verify_specialists(messages)
@@ -105,6 +117,8 @@ def main() -> None:
         thread,
         GRAPH_ID,
         input={"messages": [{"role": "user", "content": FOLLOWUP_PROMPT}]},
+        metadata=metadata,
+        context={"operation": "chat", "prompt_variant": "baseline"},
     )
     verify_specialists(current_turn(followup))
     summary = {

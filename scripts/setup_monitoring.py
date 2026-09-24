@@ -29,7 +29,7 @@ def chart_specs(project_id: str) -> list[dict[str, Any]]:
     root_filter = {
         "source_type": "tracing_project",
         "project_ids": [project_id],
-        "run_filter": "eq(is_root, true)",
+        "run_filter": "and(eq(is_root, true), not(has(metadata, '{\"operation\":\"snapshot\"}')))",
     }
     return [
         {
@@ -100,7 +100,7 @@ def evaluator_spec(project_id: str, playground_settings_id: str) -> dict[str, An
         "session_id": project_id,
         "is_enabled": True,
         "sampling_rate": 1.0,
-        "filter": "eq(is_root, true)",
+        "filter": "and(eq(is_root, true), not(has(metadata, '{\"operation\":\"snapshot\"}')))",
         "evaluators": [
             {
                 "structured": {
