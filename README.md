@@ -27,8 +27,8 @@ The **Equipment** view groups assets by unit; it is not a piping diagram or a si
 Reset saved assessments, proposals and issue threads before a demo:
 
 ```sh
-uv run --env-file .env python -m scripts.reset_workspace --url <deployment-url>          # dry run
-uv run --env-file .env python -m scripts.reset_workspace --url <deployment-url> --apply
+mise run reset --url <deployment-url>          # dry run
+mise run reset --url <deployment-url> --apply
 ```
 
 The React/Vite+/Macaw frontend calls MDA directly with `useStream`. On completion it
@@ -42,16 +42,25 @@ This is a shared presenter demo: a workspace key grants broad deployment access,
 reviewers are recorded as `workspace_operator`, and the Store is not a transactional
 ticket database. It does not implement individual user permissions or multiuser locking.
 
-### Local frontend
+### Local development
+
+[mise](https://mise.jdx.dev) pins uv, Node, pnpm and lefthook in `mise.toml`; CI installs
+the same versions. Installs go through Socket Firewall (`sfw`).
 
 ```sh
-sfw pnpm --dir frontend install --frozen-lockfile
-uv run --no-sync python -m scripts.export_snapshot
-pnpm --dir frontend run dev
+mise install          # pinned tools
+mise run setup        # locked dependencies, git hooks, snapshot
+mise run dev          # local agent on :2124 and frontend on :5173, wired together
+mise run check        # everything CI checks; also runs on git push
+mise tasks            # all tasks
 ```
 
-The frontend defaults to the hosted MDA. Set `VITE_MDA_API_URL` to use another endpoint.
-`PAGES_BASE_PATH` defaults to `/p66-refinery-agent-demo/`.
+Open http://localhost:5173/p66-refinery-agent-demo/ and connect with any key text; the
+local agent does not check it. `mda dev` reads `.env` for the Gateway key. Its store is in
+memory, so a restart clears saved assessments. Change `AGENT_PORT` or `WEB_PORT` in
+`mise.toml` if they are taken. Run `mise run snapshot` and commit the result after changing
+fixture data; `check` fails on a stale snapshot. A plain `pnpm --dir frontend run dev`
+targets the hosted agent; set `VITE_MDA_API_URL` to use another endpoint.
 
 ### GitHub Actions deployment
 
@@ -185,10 +194,7 @@ live alerts are not enabled.
 ## Validate
 
 ```sh
-uv run ruff format --check .
-uv run ruff check .
-uv run ty check
-uv run pytest -q
+mise run check
 uv run mda build
 ```
 

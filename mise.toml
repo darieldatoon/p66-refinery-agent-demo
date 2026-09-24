@@ -1,0 +1,80 @@
+# Pinned tools and tasks shared by local development and CI (.github/workflows/deploy.yml).
+[tools]
+uv = "0.12.18"
+node = "24.21.0"
+pnpm = "12.5.1"
+lefthook = "2.1.14"
+
+[env]
+# The main checkout's dev server usually holds 2024.
+AGENT_PORT = "2124"
+WEB_PORT = "5173"
+npm_config_update_notifier = "false"
+
+[tasks."setup:backend"]
+description = "Install locked Python dependencies"
+run = '"${SFW:-sfw}" uv sync --frozen'
+
+[tasks."setup:frontend"]
+description = "Install locked frontend dependencies"
+run = '"${SFW:-sfw}" pnpm --dir frontend install --frozen-lockfile'
+
+[tasks.setup]
+description = "Install dependencies and git hooks, and export the snapshot"
+depends = ["setup:backend", "setup:frontend"]
+run = [
+  'if [ -z "${CI:-}" ]; then lefthook install; fi',
+  "uv run --no-sync python -m scripts.export_snapshot",
+]
+
+[tasks.snapshot]
+description = "Regenerate frontend/public/snapshot.json from the fixture"
+run = "uv run --no-sync python -m scripts.export_snapshot"
+
+[tasks."check:snapshot"]
+description = "Fail if the committed snapshot is stale"
+run = [
+  "uv run --no-sync python -m scripts.export_snapshot",
+  'git diff --exit-code -- frontend/public/snapshot.json || { echo "snapshot.json is stale: run mise run snapshot and commit it"; exit 1; }',
+]
+
+[tasks."check:backend"]
+description = "Lint, type-check and test the agent"
+run = [
+  "uv run --no-sync ruff check .",
+  "uv run --no-sync ruff format --check .",
+  "uv run --no-sync ty check",
+  "uv run --no-sync pytest -q",
+]
+
+[tasks."check:frontend"]
+description = "Type-check and test the frontend"
+run = ["pnpm --dir frontend run check", "pnpm --dir frontend run test"]
+
+[tasks.check]
+description = "Run every check CI runs"
+# Sequential: check:snapshot rewrites a file the frontend tests import.
+run = ["mise run check:snapshot", "mise run check:backend", "mise run check:frontend"]
+
+[tasks.build]
+description = "Build the static site (VITE_MDA_API_URL and PAGES_BASE_PATH are optional)"
+run = [
+  "uv run --no-sync python -m scripts.export_snapshot",
+  "pnpm --dir frontend run build",
+]
+
+[tasks."dev:agent"]
+description = "Run the agent locally on AGENT_PORT"
+run = 'uv run --no-sync mda dev --port "$AGENT_PORT" --no-browser'
+
+[tasks."dev:web"]
+description = "Run the frontend on WEB_PORT against the local agent"
+run = 'VITE_MDA_API_URL="http://127.0.0.1:$AGENT_PORT" pnpm --dir frontend run dev --port "$WEB_PORT" --strictPort'
+
+[tasks.dev]
+description = "Run the local agent and frontend together"
+depends = ["dev:agent", "dev:web"]
+
+[tasks.reset]
+description = "Reset saved workspace records: mise run reset --url <deployment-url> [--apply]"
+run = "uv run --no-sync --env-file .env python -m scripts.reset_workspace"

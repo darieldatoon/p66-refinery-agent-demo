@@ -19,13 +19,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
         with:
-          python-version: '3.12'
-          enable-cache: true
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+          persist-credentials: false
+      # Installs the tool versions pinned in mise.toml, matching local development.
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
         with:
-          node-version: '24'
+          version: 2026.9.12
       - uses: socketdev/action@ba6de6cc0565af1f42295590380973573297e31f
         id: socket
         with:
@@ -33,27 +32,14 @@ jobs:
       - name: Install locked dependencies
         env:
           SFW: ${{ steps.socket.outputs.firewall-path-binary }}
-        run: |
-          "$SFW" uv sync --frozen
-          "$SFW" npm install --global pnpm@12.5.1
-          "$SFW" pnpm --dir frontend install --frozen-lockfile
-      - name: Check backend
-        run: |
-          uv run --no-sync ruff check .
-          uv run --no-sync ruff format --check .
-          uv run --no-sync ty check
-          uv run --no-sync pytest -q
-      - name: Check frontend
-        run: |
-          pnpm --dir frontend run check
-          pnpm --dir frontend run test
+        run: mise run setup
+      - name: Check
+        run: mise run check
       - name: Build static site
         env:
           VITE_MDA_API_URL: ${{ vars.MDA_API_URL }}
           PAGES_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
-        run: |
-          uv run --no-sync python -m scripts.export_snapshot
-          pnpm --dir frontend run build
+        run: mise run build
       - name: Upload Pages bundle
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
@@ -68,10 +54,11 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
-      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
         with:
-          python-version: '3.12'
-          enable-cache: true
+          persist-credentials: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c
+        with:
+          version: 2026.9.12
       - uses: socketdev/action@ba6de6cc0565af1f42295590380973573297e31f
         id: socket
         with:
@@ -79,7 +66,7 @@ jobs:
       - name: Install agent dependencies
         env:
           SFW: ${{ steps.socket.outputs.firewall-path-binary }}
-        run: '"$SFW" uv sync --frozen'
+        run: mise run setup:backend
       - name: Deploy Managed Deep Agent
         env:
           LANGSMITH_API_KEY: ${{ secrets.LANGSMITH_API_KEY }}
