@@ -21,7 +21,15 @@ export default function App() {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const generation = useRef(0);
+  const settingsDialog = useRef<HTMLDialogElement>(null);
   const client = useMemo(() => createClient(apiKey), [apiKey]);
+  useEffect(() => {
+    if (settingsOpen) settingsDialog.current?.showModal();
+  }, [settingsOpen]);
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    setKeyInput("");
+  };
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}snapshot.json`)
       .then((response) => {
@@ -76,7 +84,10 @@ export default function App() {
         <button
           aria-label="Refinery overview"
           aria-pressed={activeTab === "overview"}
-          onClick={() => setActiveTab("overview")}
+          onClick={() => {
+            setActiveTab("overview");
+            document.getElementById("refinery-overview")?.scrollIntoView({ behavior: "smooth" });
+          }}
         >
           ◫
         </button>
@@ -165,14 +176,20 @@ export default function App() {
         {workspace && asset ? (
           <div className="workspace-layout">
             <div className="operations-column">
-              <section className="overview-panel panel">
+              <section className="overview-panel panel" id="refinery-overview">
                 <div className="section-heading">
                   <div>
                     <h2>Refinery overview</h2>
                     <p>Select equipment to explore its condition and evidence.</p>
                   </div>
                   <span className="live-badge">
-                    {apiKey ? "Agent connected" : "Snapshot preview"}
+                    {!apiKey
+                      ? "Snapshot preview"
+                      : error
+                        ? "Connection issue"
+                        : loading
+                          ? "Refreshing…"
+                          : "Agent connected"}
                   </span>
                 </div>
                 <RefineryMap
@@ -287,23 +304,17 @@ export default function App() {
         </footer>
       </main>
       {settingsOpen && (
-        <div
+        <dialog
+          ref={settingsDialog}
           className="dialog-backdrop"
+          aria-labelledby="connection-title"
+          onCancel={closeSettings}
           onClick={(event) => {
-            if (event.target === event.currentTarget) setSettingsOpen(false);
+            if (event.target === event.currentTarget) closeSettings();
           }}
         >
-          <section
-            className="connection-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="connection-title"
-          >
-            <button
-              className="dialog-close"
-              aria-label="Close settings"
-              onClick={() => setSettingsOpen(false)}
-            >
+          <section className="connection-dialog">
+            <button className="dialog-close" aria-label="Close settings" onClick={closeSettings}>
               ×
             </button>
             <span className="eyebrow">AGENT CONNECTION</span>
@@ -342,6 +353,8 @@ export default function App() {
                   setApiKey("");
                   setKeyInput("");
                   setSettingsOpen(false);
+                  setError("");
+                  setLoading(false);
                   generation.current++;
                 }}
               >
@@ -350,7 +363,7 @@ export default function App() {
             )}
             <small>A shared workspace key gives access to shared demo investigations.</small>
           </section>
-        </div>
+        </dialog>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AsteriskIcon } from "@phosphor-icons/react";
 import { useStream } from "@langchain/react";
 import { HumanMessage, type BaseMessage } from "@langchain/core/messages";
@@ -127,6 +127,8 @@ function Conversation({
   const [error, setError] = useState("");
   const [finalMessages, setFinalMessages] = useState<Message[] | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const conversation = useRef<HTMLDivElement>(null);
+  const followLatest = useRef(true);
   const client = useMemo(() => createClient(apiKey), [apiKey]);
   const stream = useStream<ChatState>({ client, assistantId: ASSISTANT, threadId });
   const busy = stream.isLoading || stream.isThreadLoading;
@@ -165,11 +167,16 @@ function Conversation({
     : (finalMessages ?? stream.values.messages ?? stream.messages);
   const published = artifacts(messages);
   const review = stream.interrupt?.value as WorkInterrupt | LegacyInterrupt | undefined;
+  useLayoutEffect(() => {
+    const element = conversation.current;
+    if (element && followLatest.current) element.scrollTop = element.scrollHeight;
+  }, [messages, busy, review]);
   const customReview =
     review && "kind" in review && review.kind === "work_order_review" ? review : null;
   const legacyReview = review && "action_requests" in review ? review : null;
   const disabled = busy || refreshing || !!review;
   const send = async (text: string) => {
+    followLatest.current = true;
     setError("");
     try {
       await stream.submit(
@@ -191,6 +198,7 @@ function Conversation({
     }
   };
   const decide = async (action: "approve" | "reject") => {
+    followLatest.current = true;
     setError("");
     const response = customReview
       ? { action, reason: reviewReason }
@@ -235,7 +243,16 @@ function Conversation({
         </span>
         <span>{toolCount > 0 ? `${toolCount} evidence steps` : "2 specialists available"}</span>
       </div>
-      <div className="agent-conversation" data-testid="conversation">
+      <div
+        ref={conversation}
+        className="agent-conversation"
+        data-testid="conversation"
+        onScroll={(event) => {
+          const element = event.currentTarget;
+          followLatest.current =
+            element.scrollHeight - element.scrollTop - element.clientHeight < 80;
+        }}
+      >
         {!messages.length && (
           <div className="conversation-intro">
             <span className="eyebrow">LET’S INVESTIGATE</span>
