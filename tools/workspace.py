@@ -42,7 +42,12 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
     def get_issue_evidence(issue_id: str) -> dict[str, Any]:
         """Read an issue signal and its sensor, maintenance and failure evidence."""
         signal = get_signal(source, issue_id)
-        return {"signal": signal.model_dump(), "detail": asset_detail(source, signal.asset_id)}
+        detail = asset_detail(source, signal.asset_id)
+        return {
+            "signal": signal.model_dump(),
+            "detail": detail,
+            "citable_evidence_ids": sorted(evidence_ids(detail)),
+        }
 
     @tool
     async def record_issue_assessment(
@@ -55,17 +60,16 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
         cited_evidence_ids: list[str],
         runtime: ToolRuntime[DemoContext],
     ) -> dict[str, Any]:
-        """Persist an evidence-backed assessment after consulting both specialists.
-
-        Cite existing tag, note, work-order or failure IDs for this asset. An assessment
-        does not approve work or prove the equipment is repaired. Record uncertainty.
-        Limits: summary 360 characters, recommendation and uncertainty 280 each.
-        """
+        """Cite this asset's tag, work-order, note, failure, or spare-part IDs."""
         signal = await asyncio.to_thread(get_signal, source, issue_id)
         repository = _repository(runtime, signal)
         valid_ids = evidence_ids(await asyncio.to_thread(asset_detail, source, signal.asset_id))
-        if not set(cited_evidence_ids) <= valid_ids:
-            raise ToolException("Citations must identify existing evidence for this issue's asset.")
+        unknown_ids = sorted(set(cited_evidence_ids) - valid_ids)
+        if unknown_ids:
+            raise ToolException(
+                f"Unknown evidence IDs for {signal.asset_id}: {unknown_ids}. "
+                f"Valid IDs: {sorted(valid_ids)}"
+            )
         assessment = Assessment(
             assessment_id=str(uuid5(NAMESPACE_URL, f"{signal.thread_id}/{runtime.tool_call_id}")),
             issue_id=issue_id,

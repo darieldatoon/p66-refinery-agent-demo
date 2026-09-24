@@ -42,7 +42,7 @@ ASSESSMENT_ARGS: dict[str, Any] = {
     "summary": "Vibration rises below the configured alarm.",
     "recommendation": "Inspect the bearing housing and verify lubrication.",
     "uncertainty": "The trend does not establish the root cause.",
-    "cited_evidence_ids": ["P-101A-VIB", "N-001", "WO-0001"],
+    "cited_evidence_ids": ["P-101A-VIB", "N-001", "WO-0001", "SP-001"],
 }
 PROPOSAL_ARGS: dict[str, Any] = {
     "issue_id": ISSUE,
@@ -92,6 +92,12 @@ def test_fixed_snapshot_signals_and_evidence(source):
         get_signal(source, "missing")
     with pytest.raises(ValueError, match="Unknown asset"):
         asset_detail(source, "'; DROP TABLE assets; --")
+
+
+def test_issue_evidence_lists_citable_ids(source):
+    tool = next(tool for tool in build_workspace_tools(source) if tool.name == "get_issue_evidence")
+    evidence = tool.invoke({"issue_id": ISSUE})
+    assert "SP-001" in evidence["citable_evidence_ids"]
 
 
 @pytest.mark.asyncio
@@ -202,13 +208,17 @@ async def test_assessment_and_proposal_guards(source):
         await call_tool(
             tools, "record_issue_assessment", ASSESSMENT_ARGS, replace(runtime, store=None)
         )
-    with pytest.raises(ToolException, match="Citations"):
+    with pytest.raises(
+        ToolException, match=r"Unknown evidence IDs for P-101A: \['SP-003'\]"
+    ) as error:
         await call_tool(
             tools,
             "record_issue_assessment",
-            ASSESSMENT_ARGS | {"cited_evidence_ids": ["invented"]},
+            ASSESSMENT_ARGS | {"cited_evidence_ids": ["SP-003"]},
             runtime,
         )
+    assert "Valid IDs:" in str(error.value)
+    assert "SP-001" in str(error.value)
     with pytest.raises(ValidationError):
         await call_tool(
             tools, "record_issue_assessment", ASSESSMENT_ARGS | {"cited_evidence_ids": []}, runtime

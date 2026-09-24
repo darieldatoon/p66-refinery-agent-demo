@@ -288,6 +288,7 @@ def evidence_ids(detail: dict[str, Any]) -> frozenset[str]:
         + [order["work_order_id"] for order in detail["work_orders"]]
         + [note["note_id"] for note in detail["notes"]]
         + [event["failure_id"] for event in detail["failures"]]
+        + [part["part_id"] for part in detail["spare_parts"]]
     )
 
 
