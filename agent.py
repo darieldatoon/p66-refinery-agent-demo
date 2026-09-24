@@ -1,3 +1,8 @@
+from deepagents import (
+    GeneralPurposeSubagentProfile,
+    HarnessProfile,
+    register_harness_profile,
+)
 from managed_deepagents import define_deep_agent
 
 from middleware.artifact_links import ArtifactLinksMiddleware
@@ -13,6 +18,13 @@ from tools.workspace import build_workspace_tools
 model = agent_model()
 source = SqliteRefineryDataSource()
 tools = build_tools(source)
+
+register_harness_profile(
+    "openai",
+    HarnessProfile(
+        general_purpose_subagent=GeneralPurposeSubagentProfile(enabled=False),
+    ),
+)
 
 agent = define_deep_agent(
     name="refinery-reliability-agent",

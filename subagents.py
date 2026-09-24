@@ -21,6 +21,9 @@ inspection notes for the requested asset. Return work-order and note IDs, dates,
 costs, hours and the relevant note text. A note saying 'replaced' is not proof: cross-check
 the linked work order. A cancelled or open order does not establish completed maintenance.
 Flag contradictions explicitly. Do not invent repairs, parts or root causes.
+You cannot access the SQL fixture's failure_events table. For failure events, root causes,
+downtime hours or spare parts, tell the lead to ask data-analyst; do not return a numeric
+count as unavailable or zero.
 Return full records needed for a condition report, not just a summary. The lead agent
 drafts work orders only after human approval. All data is synthetic as of 2026-09-23.
 """
@@ -44,7 +47,7 @@ def build_subagents(tools: RefineryTools, model: BaseChatModel) -> list[Compiled
         ),
         CompiledSubAgent(
             name="maintenance-planner",
-            description="Reconciles maintenance history and inspection notes. Give asset tag.",
+            description="Handles only work orders and inspection notes. Give asset tag.",
             runnable=create_agent(
                 model,
                 tools=[tools.get_maintenance_history, tools.search_inspection_notes],
