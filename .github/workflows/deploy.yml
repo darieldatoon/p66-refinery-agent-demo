@@ -2,7 +2,7 @@ name: Validate and deploy refinery workspace
 
 on:
   push:
-    branches: [main, feat/refinery-workspace]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -55,14 +55,15 @@ jobs:
           uv run --no-sync python -m scripts.export_snapshot
           pnpm --dir frontend run build
       - name: Upload Pages bundle
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b
         with:
           path: frontend/dist
 
   deploy-agent:
     needs: validate
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feat/refinery-workspace')
+    # Only main deploys; pull requests and manual runs on other branches validate only.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:

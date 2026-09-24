@@ -56,10 +56,10 @@ The frontend defaults to the hosted MDA. Set `VITE_MDA_API_URL` to use another e
 ### GitHub Actions deployment
 
 `.github/workflows/deploy.yml` validates Python and TypeScript, deploys MDA, then
-publishes GitHub Pages. Pushes to `main` and `feat/refinery-workspace` deploy the same
-demo environment; pull requests validate without deployment secrets. Pages must use
-**GitHub Actions** as its publishing source, with both branches allowed by the
-`github-pages` environment. Deployment runs are serialized.
+publishes GitHub Pages. Only pushes to `main` deploy; other branches and pull requests
+validate without deployment secrets. Test changes locally before merging. Pages must use
+**GitHub Actions** as its publishing source, with `main` allowed by the `github-pages`
+environment. Deployment runs are serialized.
 
 Configure these GitHub repository secrets using `gh secret set`:
 
