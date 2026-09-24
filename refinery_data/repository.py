@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from langgraph.store.base import BaseStore
@@ -9,6 +10,7 @@ from refinery_data.workspace import (
     Assessment,
     WorkProposal,
     asset_detail,
+    issue_rank,
     static_workspace,
 )
 
@@ -53,7 +55,8 @@ class IssueRepository:
     async def workspace(
         self, source: RefineryDataSource, selected_asset: str | None = None
     ) -> dict[str, Any]:
-        snapshot = static_workspace(source)
+        snapshot = await asyncio.to_thread(static_workspace, source)
+        criticality = {asset["asset_id"]: asset["criticality"] for asset in snapshot["assets"]}
         assessments = await self.assessments()
         proposals = await self.proposals()
         issues = []
@@ -78,7 +81,14 @@ class IssueRepository:
             )
         return snapshot | {
             "issues": sorted(
-                issues, key=lambda i: ((i["assessment"] or i)["priority"], i["issue_id"])
+                issues,
+                key=lambda i: issue_rank(
+                    (i["assessment"] or i)["priority"], criticality[i["asset_id"]], i["issue_id"]
+                ),
             ),
-            "selected_asset": asset_detail(source, selected_asset) if selected_asset else None,
+            "selected_asset": (
+                await asyncio.to_thread(asset_detail, source, selected_asset)
+                if selected_asset
+                else None
+            ),
         }

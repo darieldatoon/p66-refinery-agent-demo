@@ -1,370 +1,318 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Badge } from "@langchain/macaw-components/Badge";
+import { Banner } from "@langchain/macaw-components/Banner";
 import { Button } from "@langchain/macaw-components/Button";
+import { Dialog, DialogContent } from "@langchain/macaw-components/Dialog";
+import { GroupedTabs } from "@langchain/macaw-components/GroupedTabs";
+import { IconButton } from "@langchain/macaw-components/IconButton";
+import { Input } from "@langchain/macaw-components/Input";
+import { Text } from "@langchain/macaw-components/Text";
+import { cn } from "@langchain/macaw-components/utils/cn";
+import { useColorScheme } from "@langchain/macaw-components/hooks/useColorScheme";
+import { AsteriskIcon } from "@phosphor-icons/react/dist/ssr/Asterisk";
+import { MoonIcon } from "@phosphor-icons/react/dist/ssr/Moon";
+import { SunIcon } from "@phosphor-icons/react/dist/ssr/Sun";
 import { createClient, loadWorkspace } from "./api";
-import { conditionLabel, errorText, previewWorkspace, rankedIssues, writeAssetUrl } from "./domain";
-import type { Snapshot, Workspace } from "./types";
-import { RefineryMap } from "./components/RefineryMap";
-import { IssueDetail } from "./components/IssueDetail";
-import { AgentPanel } from "./components/AgentPanel";
+import {
+  errorText,
+  pendingProposal,
+  previewWorkspace,
+  writeAssetUrl,
+  type ReviewFilter,
+} from "./domain";
+import type { AssetDetail as Detail, Snapshot, Workspace } from "./types";
+import { AgentPanel, type AgentAction, type AgentRequest } from "./components/AgentPanel";
+import { AssetDetail } from "./components/AssetDetail";
+import { EquipmentMap } from "./components/EquipmentMap";
+import { IssueQueue } from "./components/IssueQueue";
+
+type Browse = "issues" | "equipment";
 
 export default function App() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
+  const [evidence, setEvidence] = useState<Record<string, Detail>>({});
   const [apiKey, setApiKey] = useState("");
   const [keyInput, setKeyInput] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selected, setSelected] = useState(
     () => new URLSearchParams(location.search).get("asset") || "P-101A",
   );
+  const [browse, setBrowse] = useState<Browse>("issues");
   const [unitFilter, setUnitFilter] = useState("all");
-  const [reviewFilter, setReviewFilter] = useState("all");
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>("all");
+  const [visited, setVisited] = useState<string[]>([]);
+  const [request, setRequest] = useState<AgentRequest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
   const generation = useRef(0);
-  const settingsDialog = useRef<HTMLDialogElement>(null);
+  const { isDarkMode, setMode } = useColorScheme();
   const client = useMemo(() => createClient(apiKey), [apiKey]);
-  useEffect(() => {
-    if (settingsOpen) settingsDialog.current?.showModal();
-  }, [settingsOpen]);
-  const closeSettings = () => {
-    setSettingsOpen(false);
-    setKeyInput("");
-  };
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}snapshot.json`)
       .then((response) => {
         if (!response.ok) throw new Error("Could not load the refinery snapshot.");
         return response.json() as Promise<Snapshot>;
       })
-      .then((snapshot) => setWorkspace((previous) => previous ?? previewWorkspace(snapshot)))
+      .then((snapshot) => {
+        setEvidence(snapshot.evidence);
+        setWorkspace((previous) => previous ?? previewWorkspace(snapshot));
+      })
       .catch((cause) => setError(errorText(cause)));
   }, []);
   const refresh = useCallback(() => {
     if (!apiKey) return;
-    const request = ++generation.current;
+    const current = ++generation.current;
     setLoading(true);
-    loadWorkspace(client, selected)
+    loadWorkspace(client)
       .then((result) => {
-        if (request === generation.current) {
+        if (current === generation.current) {
           setWorkspace(result);
           setError("");
         }
       })
       .catch((cause) => {
-        if (request === generation.current) setError(errorText(cause));
+        if (current === generation.current) setError(errorText(cause));
       })
       .finally(() => {
-        if (request === generation.current) setLoading(false);
+        if (current === generation.current) setLoading(false);
       });
-  }, [apiKey, client, selected]);
+  }, [apiKey, client]);
   useEffect(refresh, [refresh]);
+  const asset =
+    workspace?.assets.find((item) => item.asset_id === selected) ?? workspace?.assets[0];
+  useEffect(() => {
+    if (!asset) return;
+    if (asset.asset_id !== selected) setSelected(asset.asset_id);
+    setVisited((previous) =>
+      previous.includes(asset.asset_id) ? previous : [...previous, asset.asset_id],
+    );
+  }, [asset, selected]);
   const selectAsset = (id: string) => {
     setSelected(id);
     writeAssetUrl(id);
   };
-  const asset =
-    workspace?.assets.find((asset) => asset.asset_id === selected) ?? workspace?.assets[0];
-  useEffect(() => {
-    if (workspace && asset && asset.asset_id !== selected) selectAsset(asset.asset_id);
-  }, [workspace, asset, selected]);
-  const issue = workspace?.issues.find((issue) => issue.asset_id === asset?.asset_id);
-  const units = new Map(workspace?.assets.map((asset) => [asset.asset_id, asset.unit_id]));
-  const issues = workspace ? rankedIssues(workspace.issues, unitFilter, units, reviewFilter) : [];
-  const assessed = workspace?.issues.filter((issue) => issue.assessment).length ?? 0;
-  const pending =
-    workspace?.issues
-      .flatMap((issue) => issue.proposals)
-      .filter((proposal) => proposal.status === "pending_review").length ?? 0;
+  const requestAgent = (action: AgentAction) => {
+    if (!apiKey || !asset) {
+      setSettingsOpen(true);
+      return;
+    }
+    setRequest({ assetId: asset.asset_id, action, nonce: Date.now() });
+  };
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    setKeyInput("");
+  };
+  const disconnect = () => {
+    setApiKey("");
+    setVisited(asset ? [asset.asset_id] : []);
+    setError("");
+    setLoading(false);
+    generation.current++;
+    closeSettings();
+  };
+  const issues = workspace?.issues ?? [];
+  const assessed = issues.filter((item) => item.assessment).length;
+  const awaiting = issues.filter((item) => pendingProposal(item)).length;
+  const issueFor = (assetId: string) => issues.find((item) => item.asset_id === assetId);
   return (
-    <div className="app-shell">
-      <nav className="nav-rail" aria-label="Workspace navigation">
-        <div className="brand-mark">
-          R<span>•</span>
+    <div className="flex min-h-screen flex-col bg-surface-level-1 text-primary lg:h-screen">
+      <header className="flex flex-wrap items-center gap-space-3 border-b border-muted px-space-5 py-space-3">
+        <span className="flex size-8 items-center justify-center rounded-md bg-brand text-brand-on-fill">
+          <AsteriskIcon aria-hidden size={18} weight="bold" />
+        </span>
+        <div className="flex flex-col">
+          <Text variant="md" weight="semibold" as="h1">
+            Refinery Reliability
+          </Text>
+          <Text variant="xs" color="tertiary" as="span">
+            Synthetic data · snapshot Sep 23, 2026 12:00 UTC
+          </Text>
         </div>
-        <button
-          aria-label="Refinery overview"
-          aria-pressed={activeTab === "overview"}
-          onClick={() => {
-            setActiveTab("overview");
-            document.getElementById("refinery-overview")?.scrollIntoView({ behavior: "smooth" });
-          }}
-        >
-          ◫
-        </button>
-        <button
-          aria-label="Issue investigations"
-          aria-pressed={activeTab === "issues"}
-          onClick={() => {
-            setActiveTab("issues");
-            document.getElementById("issue-queue")?.scrollIntoView({ behavior: "smooth" });
-          }}
-        >
-          ☷
-        </button>
-        <div className="rail-bottom">
-          <button aria-label="Connection settings" onClick={() => setSettingsOpen(true)}>
-            ⚙
-          </button>
-          <span className="avatar">DD</span>
+        <div className="ml-auto flex flex-wrap items-center gap-space-3">
+          <Text variant="xs" color="secondary" as="span" aria-live="polite">
+            {apiKey
+              ? loading
+                ? "Refreshing…"
+                : `${assessed} of ${issues.length} assessed · ${awaiting} awaiting review`
+              : "Preview · connect to investigate"}
+          </Text>
+          <IconButton
+            icon={isDarkMode ? SunIcon : MoonIcon}
+            label={isDarkMode ? "Use light theme" : "Use dark theme"}
+            variant="plain"
+            color="secondary"
+            onClick={() => setMode(isDarkMode ? "light" : "dark")}
+          />
+          <Button
+            size="sm"
+            variant={apiKey ? "outlined" : "normal"}
+            color={apiKey ? "secondary" : "primary"}
+            onClick={() => setSettingsOpen(true)}
+          >
+            {apiKey ? "Agent connected" : "Connect agent"}
+          </Button>
         </div>
-      </nav>
-      <main className="workspace-main">
-        <header className="workspace-header">
-          <div className="breadcrumb">
-            Operations <span>/</span> Refinery reliability
-          </div>
-          <div className="header-actions">
-            <span className="snapshot-badge">
-              <i /> Fixed snapshot · Sep 23, 2026
-            </span>
-            <Button
-              size="sm"
-              variant="outlined"
-              color="secondary"
-              onClick={() => setSettingsOpen(true)}
-            >
-              {apiKey ? "Connection settings" : "Connect agent"}
-            </Button>
-          </div>
-        </header>
-        <div className="page-title">
-          <div>
-            <span className="eyebrow">RELIABILITY WORKSPACE</span>
-            <h1>A clearer view of what needs attention.</h1>
-            <p>Investigate the evidence. Make the call. Keep your refinery moving.</p>
-          </div>
-          <span className="demo-badge">SYNTHETIC DEMO</span>
+      </header>
+      {error && (
+        <div className="px-space-5 pt-space-3">
+          <Banner
+            intent="error"
+            action={
+              <Button
+                size="sm"
+                variant="outlined"
+                color="secondary"
+                onClick={() => setSettingsOpen(true)}
+              >
+                Connection settings
+              </Button>
+            }
+          >
+            {error}
+          </Banner>
         </div>
-        {error && (
-          <div className="error-banner" role="alert">
-            <span>{error}</span>
-            <Button size="sm" variant="plain" onClick={() => setSettingsOpen(true)}>
-              Connection settings
-            </Button>
-          </div>
-        )}
-        <div className="metrics">
-          <div>
-            <span>Equipment in view</span>
-            <strong>
-              {workspace?.assets.length ?? "—"}
-              <small>across 3 process units</small>
-            </strong>
-          </div>
-          <div>
-            <span>Signals to investigate</span>
-            <strong>
-              {workspace?.issues.length ?? "—"}
-              <small>from the fixed snapshot</small>
-            </strong>
-          </div>
-          <div>
-            <span>Agent assessments</span>
-            <strong>
-              {assessed}
-              <small>of {workspace?.issues.length ?? 4} signals</small>
-            </strong>
-          </div>
-          <div className={pending ? "attention" : ""}>
-            <span>Awaiting your review</span>
-            <strong>
-              {pending}
-              <small>work proposals</small>
-            </strong>
-          </div>
-        </div>
-        {workspace && asset ? (
-          <div className="workspace-layout">
-            <div className="operations-column">
-              <section className="overview-panel panel" id="refinery-overview">
-                <div className="section-heading">
-                  <div>
-                    <h2>Refinery overview</h2>
-                    <p>Select equipment to explore its condition and evidence.</p>
-                  </div>
-                  <span className="live-badge">
-                    {!apiKey
-                      ? "Snapshot preview"
-                      : error
-                        ? "Connection issue"
-                        : loading
-                          ? "Refreshing…"
-                          : "Agent connected"}
-                  </span>
-                </div>
-                <RefineryMap
+      )}
+      {workspace && asset ? (
+        <main className="grid min-h-0 flex-1 gap-space-4 p-space-4 lg:grid-cols-[18rem_minmax(0,1fr)_24rem] xl:grid-cols-[20rem_minmax(0,1fr)_26rem]">
+          <nav aria-label="Browse" className="flex min-h-0 flex-col gap-space-3">
+            <GroupedTabs<Browse>
+              value={browse}
+              onChange={setBrowse}
+              options={[
+                {
+                  value: "issues",
+                  display: "Issues",
+                  rightDecorator: (
+                    <Badge size="xs" color="secondary">
+                      {String(issues.length)}
+                    </Badge>
+                  ),
+                },
+                {
+                  value: "equipment",
+                  display: "Equipment",
+                  rightDecorator: (
+                    <Badge size="xs" color="secondary">
+                      {String(workspace.assets.length)}
+                    </Badge>
+                  ),
+                },
+              ]}
+            />
+            <div className="min-h-0 flex-1 overflow-y-auto pr-space-1">
+              {browse === "issues" ? (
+                <IssueQueue
+                  workspace={workspace}
+                  selected={asset.asset_id}
+                  unit={unitFilter}
+                  review={reviewFilter}
+                  onUnitChange={setUnitFilter}
+                  onReviewChange={setReviewFilter}
+                  onSelect={selectAsset}
+                />
+              ) : (
+                <EquipmentMap
                   workspace={workspace}
                   selected={asset.asset_id}
                   onSelect={selectAsset}
                 />
-              </section>
-              <div className="investigation-layout">
-                <section className="queue-panel panel" id="issue-queue">
-                  <div className="section-heading">
-                    <h2>
-                      Issues <span className="count">{workspace.issues.length}</span>
-                    </h2>
-                    <span className="muted">By priority</span>
-                  </div>
-                  <div className="queue-filters">
-                    <label>
-                      <span className="sr-only">Process unit</span>
-                      <select
-                        aria-label="Process unit"
-                        value={unitFilter}
-                        onChange={(event) => setUnitFilter(event.target.value)}
-                      >
-                        <option value="all">All units</option>
-                        {workspace.units.map((unit) => (
-                          <option key={unit.unit_id} value={unit.unit_id}>
-                            {unit.unit_id}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span className="sr-only">Review filter</span>
-                      <select
-                        aria-label="Review filter"
-                        value={reviewFilter}
-                        onChange={(event) => setReviewFilter(event.target.value)}
-                      >
-                        <option value="all">All signals</option>
-                        <option value="assessed">Assessed</option>
-                        <option value="pending">Awaiting review</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div className="issue-list">
-                    {issues.map((item) => (
-                      <button
-                        className={`issue-card ${issue?.issue_id === item.issue_id ? "active" : ""}`}
-                        key={item.issue_id}
-                        onClick={() => selectAsset(item.asset_id)}
-                        aria-pressed={issue?.issue_id === item.issue_id}
-                      >
-                        <div>
-                          <span
-                            className={`priority ${item.assessment?.priority ?? item.priority}`}
-                          >
-                            {item.assessment?.priority ?? item.priority}
-                          </span>
-                          <code>{item.asset_id}</code>
-                          <span className="issue-arrow">↗</span>
-                        </div>
-                        <h3>{item.title}</h3>
-                        <p>
-                          {conditionLabel(item)} · {item.evidence.length} evidence sources
-                        </p>
-                        <span className="issue-category">
-                          {item.category.replaceAll("_", " ")}
-                          {item.proposals.some(
-                            (proposal) => proposal.status === "pending_review",
-                          ) && " · Review needed"}
-                        </span>
-                      </button>
-                    ))}
-                    {!issues.length && (
-                      <p className="empty-filter">No issues match these filters.</p>
-                    )}
-                  </div>
-                  <div className="queue-note">
-                    Priority is a recommendation. Review evidence before authorizing work.
-                  </div>
-                </section>
-                <IssueDetail
-                  key={asset.asset_id}
-                  asset={asset}
-                  issue={issue}
-                  detail={
-                    workspace.selected_asset?.asset.asset_id === asset.asset_id
-                      ? workspace.selected_asset
-                      : null
-                  }
-                  loading={loading}
-                  connected={!!apiKey}
-                />
-              </div>
+              )}
             </div>
-            <AgentPanel
-              key={`${asset.asset_id}:${!!apiKey}`}
-              apiKey={apiKey}
-              asset={asset}
-              issue={issue}
-              onRefresh={refresh}
-              onConnect={() => setSettingsOpen(true)}
-            />
-          </div>
-        ) : (
-          <div className="loading-page">Loading the refinery snapshot…</div>
-        )}
-        <footer className="workspace-footer">
-          Synthetic refinery data · 45-day evidence window ending September 23, 2026 at 12:00 UTC ·
-          Decisions remain with the operator.
-        </footer>
-      </main>
-      {settingsOpen && (
-        <dialog
-          ref={settingsDialog}
-          className="dialog-backdrop"
-          aria-labelledby="connection-title"
-          onCancel={closeSettings}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) closeSettings();
-          }}
-        >
-          <section className="connection-dialog">
-            <button className="dialog-close" aria-label="Close settings" onClick={closeSettings}>
-              ×
-            </button>
-            <span className="eyebrow">AGENT CONNECTION</span>
-            <h2 id="connection-title">Bring the agent into the workspace.</h2>
-            <p>
-              Use a LangSmith API key for the deployment’s workspace. The key stays in memory and is
-              cleared when you reload.
-            </p>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                setApiKey(keyInput.trim());
-                setKeyInput("");
-                setSettingsOpen(false);
-              }}
-            >
-              <label htmlFor="api-key">LangSmith API key</label>
-              <input
-                id="api-key"
-                type="password"
-                autoComplete="off"
-                value={keyInput}
-                onChange={(event) => setKeyInput(event.target.value)}
-                required
-                autoFocus
+          </nav>
+          <AssetDetail
+            key={asset.asset_id}
+            asset={asset}
+            issue={issueFor(asset.asset_id)}
+            detail={evidence[asset.asset_id]}
+            connected={!!apiKey}
+            onInvestigate={() => requestAgent("investigate")}
+          />
+          <div className="min-h-[36rem] lg:min-h-0">
+            {apiKey ? (
+              visited.map((assetId) => {
+                const item = workspace.assets.find((candidate) => candidate.asset_id === assetId);
+                return item ? (
+                  <div
+                    key={`${assetId}:${apiKey}`}
+                    className={cn("h-full", assetId !== asset.asset_id && "hidden")}
+                  >
+                    <AgentPanel
+                      apiKey={apiKey}
+                      asset={item}
+                      issue={issueFor(assetId)}
+                      request={request}
+                      onRequestHandled={() => setRequest(null)}
+                      onRefresh={refresh}
+                      onConnect={() => setSettingsOpen(true)}
+                    />
+                  </div>
+                ) : null;
+              })
+            ) : (
+              <AgentPanel
+                apiKey=""
+                asset={asset}
+                issue={issueFor(asset.asset_id)}
+                onRefresh={refresh}
+                onConnect={() => setSettingsOpen(true)}
               />
-              <Button type="submit" disabled={!keyInput.trim()}>
+            )}
+          </div>
+        </main>
+      ) : (
+        <div className="flex flex-1 items-center justify-center">
+          <Text color="tertiary">Loading the refinery snapshot…</Text>
+        </div>
+      )}
+      <Dialog
+        open={settingsOpen}
+        onOpenChange={(open) => (open ? setSettingsOpen(true) : closeSettings())}
+      >
+        <DialogContent
+          title="Connect the agent"
+          description="Use a LangSmith API key for the deployment's workspace. The key stays in memory and is cleared on reload."
+        >
+          <form
+            className="flex flex-col gap-space-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              setApiKey(keyInput.trim());
+              closeSettings();
+            }}
+          >
+            <Input
+              id="api-key"
+              size="md"
+              type="password"
+              label="LangSmith API key"
+              autoComplete="off"
+              value={keyInput}
+              onChange={setKeyInput}
+              required
+              autoFocus
+            />
+            <Text variant="xs" color="tertiary">
+              A shared workspace key can see every presenter's investigations.
+            </Text>
+            <div className="flex justify-end gap-space-2">
+              {apiKey && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outlined"
+                  color="secondary"
+                  onClick={disconnect}
+                >
+                  Disconnect
+                </Button>
+              )}
+              <Button type="submit" size="sm" disabled={!keyInput.trim()}>
                 Connect
               </Button>
-            </form>
-            {apiKey && (
-              <Button
-                variant="plain"
-                color="secondary"
-                onClick={() => {
-                  setApiKey("");
-                  setKeyInput("");
-                  setSettingsOpen(false);
-                  setError("");
-                  setLoading(false);
-                  generation.current++;
-                }}
-              >
-                Disconnect agent
-              </Button>
-            )}
-            <small>A shared workspace key gives access to shared demo investigations.</small>
-          </section>
-        </dialog>
-      )}
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

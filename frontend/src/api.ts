@@ -10,10 +10,10 @@ export function createClient(apiKey: string): Client {
   return new Client({ apiUrl: API_URL, apiKey });
 }
 
-export async function loadWorkspace(client: Client, assetId: string): Promise<Workspace> {
+export async function loadWorkspace(client: Client): Promise<Workspace> {
   const result = (await client.runs.wait(null, ASSISTANT, {
     input: {},
-    context: { operation: "workspace", asset_id: assetId },
+    context: { operation: "workspace" },
     metadata: { source: "refinery-workspace", operation: "workspace" },
   })) as AgentState & { __error__?: { message?: string } };
   if (result.__error__ || !result.workspace?.issues)

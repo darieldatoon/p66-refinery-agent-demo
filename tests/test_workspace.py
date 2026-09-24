@@ -28,6 +28,7 @@ from refinery_data.workspace import (
     evidence_ids,
     get_signal,
     signal_catalog,
+    static_evidence,
     static_workspace,
 )
 from tests.test_agent import ToolModel
@@ -83,6 +84,10 @@ def test_fixed_snapshot_signals_and_evidence(source):
         assert {e.reference_id for e in signal.evidence} <= valid
         assert signal.thread_id == get_signal(source, signal.issue_id).thread_id
     assert "cancelled" in get_signal(source, "p102b-records").summary
+    assert [s["priority"] for s in snapshot["signals"]] == ["P1", "P2", "P2", "P3"]
+    evidence = static_evidence(source)
+    assert len(evidence) == 40
+    assert evidence["P-101A"]["spare_parts"][0]["stock_on_hand"] == 0
     with pytest.raises(ValueError, match="Unknown issue"):
         get_signal(source, "missing")
     with pytest.raises(ValueError, match="Unknown asset"):

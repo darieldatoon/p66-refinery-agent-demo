@@ -7,22 +7,29 @@ LangSmith traces and evaluations. Every agent model uses the LLM Gateway.
 ## Collaboration workspace
 
 Open [the refinery workspace](https://darieldatoon.github.io/p66-refinery-agent-demo/).
-The public preview shows 40 assets and four signals from the fixed synthetic snapshot.
-Connect with a LangSmith key for the deployment workspace to investigate a signal,
-inspect sensor and maintenance evidence, and discuss the recommendation with the agent.
-The browser keeps the key in memory only; reconnect after a reload.
+The public preview shows four ranked issues, 40 assets, and every asset's sensor trends,
+notes, work orders and spares from the fixed synthetic snapshot. Connect with a LangSmith
+key for the deployment workspace to investigate. The browser keeps the key in memory only;
+reconnect after a reload. The UI follows the system theme; the header toggles light/dark.
 
-1. Select P-101A and choose **Investigate issue**. Both specialists contribute, and the
-   agent saves a structured assessment with evidence citations and uncertainty.
+1. P-101A is first in the queue. Choose **Investigate with the agent**. Both specialists
+   contribute, and the agent saves a structured assessment with citations and uncertainty.
 2. Choose **Propose work**. Review the exact proposed tasks and approve or reject them.
-3. Open **Work & review** to see the saved decision. Approval creates a synthetic draft,
+3. Open **Work & Review** to see the saved decision. Approval creates a synthetic draft,
    never a CMMS submission, repair, or equipment operation.
 4. Choose **Create report** for a sandbox HTML artifact. Published links expire after
    24 hours; the artifact card uses the publishing tool's exact URL.
 
 Equipment without an assessment is **unassessed**. Work review does not change an
 equipment assessment. K-401's mixed pressure units are a data characteristic, not a fault.
-This is a schematic equipment overview, not physical piping topology or a simulation.
+The **Equipment** view groups assets by unit; it is not a piping diagram or a simulation.
+
+Reset saved assessments, proposals and issue threads before a demo:
+
+```sh
+uv run --env-file .env python -m scripts.reset_workspace --url <deployment-url>          # dry run
+uv run --env-file .env python -m scripts.reset_workspace --url <deployment-url> --apply
+```
 
 The React/Vite+/Macaw frontend calls MDA directly with `useStream`. On completion it
 reloads the saved checkpoint, which includes final-message middleware changes that
@@ -141,14 +148,19 @@ its HTML/PNG downloads, and confirms both specialists work on a subsequent messa
 
 ## Evidence and limits
 
-The seed contains 40 assets, 120 sensor tags, 129,600 hourly readings, 300 work orders,
-20 failures, 120 notes and 50 parts across three refinery units. It is frozen at
-**2026-09-23 12:00 UTC**, covering 45 days (46 calendar dates with partial boundary days).
+The seed contains 40 assets, 120 sensor tags, 129,600 hourly readings, 131 work orders,
+6 failures, 47 notes and 42 parts across three refinery units. It is frozen at
+**2026-09-23 12:00 UTC**. Sensor readings cover 45 days (46 calendar dates with partial
+boundary days); maintenance history goes back to 2024. Hero records are hand-authored in
+`refinery_data/fixture.py`. Keep the values the evals reference unchanged.
 A missing database is built atomically when the data source first initializes.
 
-Storylines: P-101A vibration rises below alarm; E-205 differential pressure rises while
-heat duty falls; C-301 has three seals fail with the same recorded cause; K-401 mixes
-bar and psi; P-102B has a replacement note linked to a cancelled work order.
+Storylines: P-101A vibration and bearing temperature rise below alarm, bearings are 2.6
+years old, the bearing kit is out of stock, and standby P-101B passed a run test; E-205
+differential pressure rises while heat duty nears its low alarm; C-301 has three seal
+failures 16 days apart, seal flush pressure drops before each, and the strainer that would
+fix it is out of stock; K-401 mixes bar and psi after a transmitter swap; P-102B has a
+replacement note linked to a cancelled work order and a later note that the leak persists.
 
 SQL uses a read-only connection, an authorizer, a 200-row cap and an execution budget.
 The tools query SQLite in the agent process; the sandbox has no direct database access.

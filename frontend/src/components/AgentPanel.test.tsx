@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import snapshot from "../../public/snapshot.json";
 import { previewWorkspace } from "../domain";
@@ -31,13 +32,15 @@ const issue = workspace.issues[0];
 const asset = workspace.assets.find((asset) => asset.asset_id === issue.asset_id)!;
 const onRefresh = vi.fn();
 const panel = () => (
-  <AgentPanel
-    apiKey="test-key-placeholder"
-    asset={asset}
-    issue={issue}
-    onRefresh={onRefresh}
-    onConnect={vi.fn()}
-  />
+  <TooltipProvider>
+    <AgentPanel
+      apiKey="test-key-placeholder"
+      asset={asset}
+      issue={issue}
+      onRefresh={onRefresh}
+      onConnect={vi.fn()}
+    />
+  </TooltipProvider>
 );
 
 beforeEach(() => {
@@ -74,7 +77,13 @@ describe("authoritative chat and durable reviews", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Investigate issue" }));
     expect(mocks.submit).toHaveBeenCalledWith(
-      expect.anything(),
+      {
+        messages: [
+          expect.objectContaining({
+            content: expect.stringMatching(/^Investigate the P-101A issue/),
+          }),
+        ],
+      },
       expect.objectContaining({
         config: expect.objectContaining({
           configurable: { issue_id: issue.issue_id, asset_id: asset.asset_id },

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
@@ -58,10 +59,11 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
 
         Cite existing tag, note, work-order or failure IDs for this asset. An assessment
         does not approve work or prove the equipment is repaired. Record uncertainty.
+        Limits: summary 360 characters, recommendation and uncertainty 280 each.
         """
-        signal = get_signal(source, issue_id)
+        signal = await asyncio.to_thread(get_signal, source, issue_id)
         repository = _repository(runtime, signal)
-        valid_ids = evidence_ids(asset_detail(source, signal.asset_id))
+        valid_ids = evidence_ids(await asyncio.to_thread(asset_detail, source, signal.asset_id))
         if not set(cited_evidence_ids) <= valid_ids:
             raise ToolException("Citations must identify existing evidence for this issue's asset.")
         assessment = Assessment(
@@ -93,7 +95,7 @@ def build_workspace_tools(source: RefineryDataSource) -> list[BaseTool]:
         Saves the exact proposal before pausing. Approval creates a synthetic draft only;
         rejection creates no draft. Never operates equipment or submits to a CMMS.
         """
-        signal = get_signal(source, issue_id)
+        signal = await asyncio.to_thread(get_signal, source, issue_id)
         repository = _repository(runtime, signal)
         if not any(a.issue_id == issue_id for a in await repository.assessments()):
             raise ToolException("Investigate and save an assessment before proposing work.")

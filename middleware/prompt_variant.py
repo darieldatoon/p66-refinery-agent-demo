@@ -30,8 +30,9 @@ def demo_prompt_variant(request: ModelRequest[Any]) -> str:
     if context.issue_id:
         return prompt + (
             f"\nCurrent workspace issue: {context.issue_id}. Fetch get_issue_evidence first. "
-            "Save conclusions with record_issue_assessment. Use propose_issue_work for work "
-            "on this issue; it pauses for review and persists both decisions. Do not use "
-            "draft_work_order for issue work."
+            "To investigate, consult both specialists, then save conclusions with "
+            "record_issue_assessment. Use propose_issue_work for work on this issue; it "
+            "pauses for review and persists both decisions. Do not use draft_work_order for "
+            "issue work. Propose work or create a report only when the operator asks."
         )
     return prompt

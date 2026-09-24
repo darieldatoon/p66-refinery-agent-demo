@@ -8,7 +8,7 @@ from refinery_data.domain import Asset, DraftRequest, Priority, Record, WorkOrde
 from refinery_data.seed import AS_OF
 from refinery_data.source import RefineryDataSource
 
-SNAPSHOT_ID = "refinery-2026-09-23-v1"
+SNAPSHOT_ID = "refinery-2026-09-23-v2"
 Condition = Literal["needs_attention", "watch", "uncertain"]
 
 
@@ -37,9 +37,10 @@ class Assessment(Record):
     issue_id: str
     condition: Condition
     priority: Priority
-    summary: str = Field(min_length=10, max_length=2000)
-    recommendation: str = Field(min_length=10, max_length=2000)
-    uncertainty: str = Field(min_length=5, max_length=1500)
+    # Dashboard-sized limits; the tool error sends the model back to shorten them.
+    summary: str = Field(min_length=10, max_length=360)
+    recommendation: str = Field(min_length=10, max_length=280)
+    uncertainty: str = Field(min_length=5, max_length=280)
     evidence_ids: tuple[str, ...] = Field(min_length=1)
     assessed_at: str
     thread_id: str
@@ -104,13 +105,22 @@ def decide_proposal(
 
 
 def signal_catalog(source: RefineryDataSource) -> tuple[Signal, ...]:
-    vibration = next(
-        trend for trend in source.get_sensor_trend("P-101A") if trend.tag.measurement == "vibration"
-    )
+    pump = {trend.tag.measurement: trend for trend in source.get_sensor_trend("P-101A")}
+    vibration = pump["vibration"]
+    bearing = pump["bearing_temperature"]
     exchanger = {trend.tag.measurement: trend for trend in source.get_sensor_trend("E-205")}
     dp = exchanger["differential_pressure"]
     duty = exchanger["heat_duty"]
-    failures = source.run_sql("SELECT * FROM failure_events WHERE asset_id = 'C-301'").rows
+    seal = next(
+        trend
+        for trend in source.get_sensor_trend("C-301")
+        if trend.tag.measurement == "seal_flush_differential_pressure"
+    )
+    failures = source.run_sql(
+        "SELECT * FROM failure_events WHERE asset_id = 'C-301' ORDER BY occurred_at"
+    ).rows
+    first, last = (datetime.fromisoformat(str(failures[i]["occurred_at"])) for i in (0, -1))
+    interval = (last - first) / (len(failures) - 1)
     cancelled = next(
         order
         for order in source.get_maintenance_history("P-102B")
@@ -120,20 +130,26 @@ def signal_catalog(source: RefineryDataSource) -> tuple[Signal, ...]:
         Signal(
             issue_id="p101a-vibration",
             asset_id="P-101A",
-            title="Vibration is trending upward",
+            title="Vibration rising toward alarm",
             summary=(
-                f"Daily mean moved from {vibration.points[0].value:.2f} to "
-                f"{vibration.points[-1].value:.2f} {vibration.tag.unit_of_measure}. "
-                f"The configured alarm is {vibration.tag.alarm_high:g} "
-                f"{vibration.tag.unit_of_measure}."
+                f"Daily mean vibration rose from {vibration.points[0].value:.2f} to "
+                f"{vibration.points[-1].value:.2f} {vibration.tag.unit_of_measure} over three "
+                f"weeks; the alarm is {vibration.tag.alarm_high:g}. Bearing temperature rose "
+                f"from {bearing.points[0].value:.0f} to {bearing.points[-1].value:.0f} "
+                f"{bearing.tag.unit_of_measure}."
             ),
-            priority="P2",
+            priority="P1",
             category="condition",
             evidence=(
                 Evidence(
                     reference_id=vibration.tag.tag_id,
                     kind="sensor",
-                    description="45-day vibration trend",
+                    description="Vibration up for three weeks, below alarm",
+                ),
+                Evidence(
+                    reference_id=bearing.tag.tag_id,
+                    kind="sensor",
+                    description="Bearing temperature rising with vibration",
                 ),
                 Evidence(
                     reference_id="N-001", kind="note", description="Bearing housing noise reported"
@@ -141,18 +157,51 @@ def signal_catalog(source: RefineryDataSource) -> tuple[Signal, ...]:
                 Evidence(
                     reference_id="WO-0001",
                     kind="work_order",
-                    description="Lubrication, not bearing replacement",
+                    description="Lubrication in August; bearings not replaced",
+                ),
+            ),
+        ),
+        Signal(
+            issue_id="c301-seals",
+            asset_id="C-301",
+            title="Seal failures recurring every 16 days",
+            summary=(
+                f"{len(failures)} seal failures since {first:%b %-d}, each recorded as flush "
+                f"line contamination. If the {interval.days}-day interval holds, the next "
+                f"falls near {last + interval:%b %-d}. Seal flush pressure is declining again."
+            ),
+            priority="P2",
+            category="recurrence",
+            evidence=(
+                *tuple(
+                    Evidence(
+                        reference_id=str(row["failure_id"]),
+                        kind="failure",
+                        description=f"Seal failure, {row['downtime_hours']:g} h downtime",
+                    )
+                    for row in failures
+                ),
+                Evidence(
+                    reference_id=seal.tag.tag_id,
+                    kind="sensor",
+                    description="Flush pressure drops before each failure",
+                ),
+                Evidence(
+                    reference_id="WO-0033",
+                    kind="work_order",
+                    description="Flush line inspection open, awaiting scaffold",
                 ),
             ),
         ),
         Signal(
             issue_id="e205-fouling",
             asset_id="E-205",
-            title="Exchanger performance is drifting",
+            title="Fouling signature on feed preheat",
             summary=(
-                f"Differential pressure rose from {dp.points[0].value:.2f} to "
-                f"{dp.points[-1].value:.2f} {dp.tag.unit_of_measure}; heat duty fell from "
-                f"{duty.points[0].value:.2f} to {duty.points[-1].value:.2f} "
+                f"Differential pressure rose from {dp.points[0].value:.1f} to "
+                f"{dp.points[-1].value:.1f} {dp.tag.unit_of_measure} while heat duty fell from "
+                f"{duty.points[0].value:.1f} to {duty.points[-1].value:.1f} "
+                f"{duty.tag.unit_of_measure}; the low duty alarm is {duty.tag.alarm_low:g} "
                 f"{duty.tag.unit_of_measure}."
             ),
             priority="P2",
@@ -161,10 +210,12 @@ def signal_catalog(source: RefineryDataSource) -> tuple[Signal, ...]:
                 Evidence(
                     reference_id=dp.tag.tag_id,
                     kind="sensor",
-                    description="Increasing differential pressure",
+                    description="Differential pressure up 45 days straight",
                 ),
                 Evidence(
-                    reference_id=duty.tag.tag_id, kind="sensor", description="Decreasing heat duty"
+                    reference_id=duty.tag.tag_id,
+                    kind="sensor",
+                    description="Heat duty approaching its low alarm",
                 ),
                 Evidence(
                     reference_id="N-002",
@@ -174,38 +225,12 @@ def signal_catalog(source: RefineryDataSource) -> tuple[Signal, ...]:
             ),
         ),
         Signal(
-            issue_id="c301-seals",
-            asset_id="C-301",
-            title="Seal failures keep recurring",
-            summary=(
-                f"{len(failures)} recorded seal failures in this 45-day window. "
-                "Investigate the recorded flush-system cause."
-            ),
-            priority="P2",
-            category="recurrence",
-            evidence=(
-                *tuple(
-                    Evidence(
-                        reference_id=str(row["failure_id"]),
-                        kind="failure",
-                        description=str(row["root_cause"]),
-                    )
-                    for row in failures
-                ),
-                Evidence(
-                    reference_id="N-003",
-                    kind="note",
-                    description="Repeated flush line contamination reported",
-                ),
-            ),
-        ),
-        Signal(
             issue_id="p102b-records",
             asset_id="P-102B",
-            title="Repair records contradict the handover",
+            title="Seal repair claimed but not recorded",
             summary=(
-                f"N-005 claims a seal replacement, but linked order WO-0005 is {cancelled.status}. "
-                "Completion is unverified."
+                f"Handover note N-005 says the seal was replaced, but linked order WO-0005 is "
+                f"{cancelled.status}. The repair is unverified."
             ),
             priority="P3",
             category="data_quality",
@@ -225,6 +250,10 @@ def signal_catalog(source: RefineryDataSource) -> tuple[Signal, ...]:
     )
 
 
+def issue_rank(priority: str, criticality: str, issue_id: str) -> tuple[str, str, str]:
+    return priority, criticality, issue_id
+
+
 def get_signal(source: RefineryDataSource, issue_id: str) -> Signal:
     for signal in signal_catalog(source):
         if signal.issue_id == issue_id:
@@ -240,7 +269,15 @@ def asset_detail(source: RefineryDataSource, asset_id: str) -> dict[str, Any]:
         "work_orders": [order.model_dump() for order in source.get_maintenance_history(asset_id)],
         "notes": [note.model_dump() for note in source.search_inspection_notes(asset_id)],
         "failures": list(
-            source.run_sql(f"SELECT * FROM failure_events WHERE asset_id = '{asset.asset_id}'").rows
+            source.run_sql(
+                f"SELECT * FROM failure_events WHERE asset_id = '{asset.asset_id}' "
+                "ORDER BY occurred_at DESC"
+            ).rows
+        ),
+        "spare_parts": list(
+            source.run_sql(
+                f"SELECT * FROM spare_parts WHERE asset_id = '{asset.asset_id}' ORDER BY part_id"
+            ).rows
         ),
     }
 
@@ -267,3 +304,8 @@ def static_workspace(source: RefineryDataSource) -> dict[str, Any]:
             for signal in signal_catalog(source)
         ],
     }
+
+
+def static_evidence(source: RefineryDataSource) -> dict[str, dict[str, Any]]:
+    assets = source.run_sql("SELECT asset_id FROM assets ORDER BY asset_id").rows
+    return {str(row["asset_id"]): asset_detail(source, str(row["asset_id"])) for row in assets}

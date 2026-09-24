@@ -4,7 +4,7 @@ export interface Asset {
   asset_id: string;
   unit_id: string;
   name: string;
-  equipment_type: string;
+  equipment_type: "pump" | "compressor" | "exchanger" | "column";
   criticality: "A" | "B" | "C";
 }
 export interface Evidence {
@@ -79,7 +79,8 @@ export interface Trend {
 }
 export interface WorkOrder {
   work_order_id: string;
-  status: string;
+  work_type: "PM" | "CM" | "EM";
+  status: "completed" | "open" | "cancelled";
   opened_at: string;
   completed_at: string | null;
   description: string;
@@ -104,6 +105,12 @@ export interface AssetDetail {
     failure_mode: string;
     downtime_hours: number;
   }[];
+  spare_parts: {
+    part_id: string;
+    description: string;
+    stock_on_hand: number;
+    reorder_point: number;
+  }[];
 }
 export interface Snapshot {
   snapshot_id: string;
@@ -112,10 +119,14 @@ export interface Snapshot {
   units: { unit_id: string; name: string }[];
   assets: Asset[];
   signals: Signal[];
+  evidence: Record<string, AssetDetail>;
 }
-export interface Workspace extends Omit<Snapshot, "signals"> {
+export interface Workspace {
+  snapshot_id: string;
+  data_as_of: string;
+  units: Snapshot["units"];
+  assets: Asset[];
   issues: Issue[];
-  selected_asset: AssetDetail | null;
 }
 export interface Message {
   id?: string;

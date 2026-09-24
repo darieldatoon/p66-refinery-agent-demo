@@ -2,13 +2,15 @@ import json
 from pathlib import Path
 
 from refinery_data.source import SqliteRefineryDataSource
-from refinery_data.workspace import static_workspace
+from refinery_data.workspace import static_evidence, static_workspace
 
 
 def main() -> None:
+    source = SqliteRefineryDataSource()
     target = Path("frontend/public/snapshot.json")
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(static_workspace(SqliteRefineryDataSource()), indent=2) + "\n")
+    snapshot = static_workspace(source) | {"evidence": static_evidence(source)}
+    target.write_text(json.dumps(snapshot, separators=(",", ":")) + "\n")
     print("Exported the fixed synthetic snapshot")
 
 

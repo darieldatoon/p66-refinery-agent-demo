@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import snapshot from "../public/snapshot.json";
-import { artifacts, conditionLabel, messageText, previewWorkspace, rankedIssues } from "./domain";
+import {
+  artifacts,
+  condition,
+  messageText,
+  previewWorkspace,
+  quickActions,
+  rankedIssues,
+  reviewState,
+} from "./domain";
 import type { Assessment, Snapshot } from "./types";
 
 const workspace = previewWorkspace(snapshot as Snapshot);
@@ -10,8 +18,14 @@ describe("workspace evidence and status", () => {
     expect(workspace.assets).toHaveLength(40);
     expect(workspace.issues).toHaveLength(4);
     expect(workspace.issues.some((issue) => issue.asset_id === "K-401")).toBe(false);
-    expect(conditionLabel()).toBe("Unassessed");
-    expect(conditionLabel(workspace.issues[0])).toBe("Signal detected");
+    expect(condition().label).toBe("Unassessed");
+    expect(condition(workspace.issues[0]).label).toBe("Signal");
+  });
+
+  it("puts the critical pump first and keeps quick actions in plain language", () => {
+    const ranked = rankedIssues(workspace.issues, workspace.assets, "all", "all");
+    expect(ranked.map((issue) => issue.asset_id)).toEqual(["P-101A", "C-301", "E-205", "P-102B"]);
+    expect(quickActions.investigate(ranked[0])).not.toMatch(/record_issue_assessment|get_issue/);
   });
 
   it("ranks by saved assessment and keeps work review separate from condition", () => {
@@ -57,13 +71,17 @@ describe("workspace evidence and status", () => {
     };
     const issues = [...workspace.issues.slice(1), assessed];
     const units = new Map(workspace.assets.map((asset) => [asset.asset_id, asset.unit_id]));
-    expect(rankedIssues(issues, "all", units, "all")[0]).toBe(assessed);
-    expect(rankedIssues(issues, "all", units, "assessed")).toEqual([assessed]);
-    expect(rankedIssues(issues, "all", units, "pending")).toEqual([]);
+    const assets = workspace.assets;
+    expect(rankedIssues(issues, assets, "all", "all")[0]).toBe(assessed);
+    expect(rankedIssues(issues, assets, "all", "assessed")).toEqual([assessed]);
+    expect(rankedIssues(issues, assets, "all", "open")).not.toContain(assessed);
     expect(
-      rankedIssues(issues, "HDT", units, "all").every((item) => units.get(item.asset_id) === "HDT"),
+      rankedIssues(issues, assets, "HDT", "all").every(
+        (item) => units.get(item.asset_id) === "HDT",
+      ),
     ).toBe(true);
-    expect(conditionLabel(assessed)).toBe("Needs attention");
+    expect(condition(assessed).label).toBe("Needs attention");
+    expect(reviewState(assessed)?.label).toBe("Proposal rejected");
     expect(issues[issues.length - 1]).toBe(assessed);
   });
 });
