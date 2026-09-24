@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -27,10 +28,11 @@ def test_seed_counts_and_repeatability(source, tmp_path):
     }.items():
         assert source.run_sql(f"SELECT count(*) AS n FROM {table}").rows[0]["n"] == count
     assert ensure_database(source.path) == source.path
-    with sqlite3.connect(other) as db:
+    with closing(sqlite3.connect(other)) as db, db:
+        db.execute("DELETE FROM work_orders")
         db.execute("PRAGMA user_version = 999")
-    with pytest.raises(ValueError, match="schema changed"):
-        ensure_database(other)
+    ensure_database(other)
+    assert other.read_bytes() == source.path.read_bytes()
 
 
 def test_atomic_seed_failure_cleans_up(tmp_path, monkeypatch):

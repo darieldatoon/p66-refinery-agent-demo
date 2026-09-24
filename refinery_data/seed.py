@@ -2,6 +2,8 @@ import os
 import random
 import sqlite3
 import tempfile
+import zlib
+from contextlib import closing
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -22,7 +24,13 @@ from refinery_data.fixture import (
 AS_OF = datetime(2026, 9, 23, 12, tzinfo=UTC)
 DAYS = 45
 SEED = 66
-SCHEMA_VERSION = 2
+# The cached database is rebuilt whenever the code that generates it changes.
+FIXTURE_VERSION = (
+    zlib.crc32(
+        b"".join(Path(__file__).with_name(name).read_bytes() for name in ("seed.py", "fixture.py"))
+    )
+    & 0x7FFFFFFF
+)
 DEFAULT_PATH = Path(__file__).with_name("refinery.db")
 
 SCHEMA = """
@@ -260,15 +268,15 @@ def seed_database(path: Path) -> None:
             for index, (asset_id, _, _, equipment_type, _) in enumerate(background)
         ]
         db.executemany("INSERT INTO spare_parts VALUES (?, ?, ?, ?, ?)", [*HERO_PARTS, *parts])
-        db.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+        db.execute(f"PRAGMA user_version = {FIXTURE_VERSION}")
 
 
 def ensure_database(path: Path = DEFAULT_PATH) -> Path:
     if path.exists():
-        with sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True) as db:
-            if db.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
-                raise ValueError("Fixture schema changed; use a new database path or rebuild it")
-        return path
+        with closing(sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)) as db:
+            current = db.execute("PRAGMA user_version").fetchone()[0] == FIXTURE_VERSION
+        if current:
+            return path
     path.parent.mkdir(parents=True, exist_ok=True)
     handle, name = tempfile.mkstemp(dir=path.parent, suffix=".db")
     os.close(handle)

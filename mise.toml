@@ -35,7 +35,7 @@ run = "uv run --no-sync python -m scripts.export_snapshot"
 description = "Fail if the committed snapshot is stale"
 run = [
   "uv run --no-sync python -m scripts.export_snapshot",
-  'git diff --exit-code -- frontend/public/snapshot.json || { echo "snapshot.json is stale: run mise run snapshot and commit it"; exit 1; }',
+  'git diff --quiet -- frontend/public/snapshot.json || { echo "snapshot.json is stale: run mise run snapshot and commit it"; exit 1; }',
 ]
 
 [tasks."check:backend"]
