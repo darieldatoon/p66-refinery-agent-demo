@@ -12,7 +12,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 
 REQUEST_TIMEOUT_SECONDS = 120
-DEFAULT_AGENT_MODEL = "langsmith:openai/gpt-5.6-sol"
+DEFAULT_AGENT_MODEL = "langsmith:openai/gpt-6-sol"
 GATEWAY_PREFIX = "langsmith:"
 
 

@@ -1,0 +1,542 @@
+[
+  {
+    "inputs": {
+      "prompt": "For P-101A, what is the latest hourly vibration? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-101A",
+      "unit": "CDU",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 4.00299,
+      "unit": "mm/s RMS",
+      "explanation": "Vibration rises over the last three weeks but remains below the configured 4.5 alarm; inspection is warranted, not a confirmed bearing failure."
+    },
+    "metadata": {
+      "case_id": "case-01",
+      "reference_sql": "SELECT value FROM sensor_readings WHERE tag_id = 'P-101A-VIB' ORDER BY timestamp DESC LIMIT 1",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "For P-101A, what is the maximum hourly vibration over all 45 days? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-101A",
+      "unit": "CDU",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 4.00806,
+      "unit": "mm/s RMS",
+      "explanation": "Vibration rises over the last three weeks but remains below the configured 4.5 alarm; inspection is warranted, not a confirmed bearing failure."
+    },
+    "metadata": {
+      "case_id": "case-02",
+      "reference_sql": "SELECT max(value) FROM sensor_readings WHERE tag_id = 'P-101A-VIB'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "For P-101A, what is the mean hourly vibration over all 45 days? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-101A",
+      "unit": "CDU",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 2.313300722222222,
+      "unit": "mm/s RMS",
+      "explanation": "Vibration rises over the last three weeks but remains below the configured 4.5 alarm; inspection is warranted, not a confirmed bearing failure."
+    },
+    "metadata": {
+      "case_id": "case-03",
+      "reference_sql": "SELECT avg(value) FROM sensor_readings WHERE tag_id = 'P-101A-VIB'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "For P-101A, what is the number of hourly vibration samples over all 45 days? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-101A",
+      "unit": "CDU",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 1080.0,
+      "unit": "samples",
+      "explanation": "Vibration rises over the last three weeks but remains below the configured 4.5 alarm; inspection is warranted, not a confirmed bearing failure."
+    },
+    "metadata": {
+      "case_id": "case-04",
+      "reference_sql": "SELECT count(*) FROM sensor_readings WHERE tag_id = 'P-101A-VIB'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "For P-101A, what is the configured high vibration alarm? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-101A",
+      "unit": "CDU",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 4.5,
+      "unit": "mm/s RMS",
+      "explanation": "Vibration rises over the last three weeks but remains below the configured 4.5 alarm; inspection is warranted, not a confirmed bearing failure."
+    },
+    "metadata": {
+      "case_id": "case-05",
+      "reference_sql": "SELECT alarm_high FROM sensor_tags WHERE tag_id='P-101A-VIB'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "For P-101A, what is the number of hourly vibration samples at or above 4.5 mm/s RMS? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-101A",
+      "unit": "CDU",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 0.0,
+      "unit": "samples",
+      "explanation": "Vibration rises over the last three weeks but remains below the configured 4.5 alarm; inspection is warranted, not a confirmed bearing failure."
+    },
+    "metadata": {
+      "case_id": "case-06",
+      "reference_sql": "SELECT count(*) FROM sensor_readings WHERE tag_id = 'P-101A-VIB' AND value >= 4.5",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the latest hourly differential pressure for E-205 in the 45-day fixture? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "E-205",
+      "unit": "FCC",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 20.96679,
+      "unit": "psi",
+      "explanation": "Rising differential pressure and falling heat duty suggest fouling; verify operating conditions."
+    },
+    "metadata": {
+      "case_id": "case-07",
+      "reference_sql": "SELECT value FROM sensor_readings WHERE tag_id='E-205-DP' ORDER BY timestamp DESC LIMIT 1",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the earliest hourly differential pressure for E-205 in the 45-day fixture? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "E-205",
+      "unit": "FCC",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 7.97552,
+      "unit": "psi",
+      "explanation": "Rising differential pressure and falling heat duty suggest fouling; verify operating conditions."
+    },
+    "metadata": {
+      "case_id": "case-08",
+      "reference_sql": "SELECT value FROM sensor_readings WHERE tag_id='E-205-DP' ORDER BY timestamp ASC LIMIT 1",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the mean differential pressure for E-205 over all 45 days? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "E-205",
+      "unit": "FCC",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 14.500267787037037,
+      "unit": "psi",
+      "explanation": "These are synthetic observations, not proof of fouling."
+    },
+    "metadata": {
+      "case_id": "case-09",
+      "reference_sql": "SELECT avg(value) FROM sensor_readings WHERE tag_id='E-205-DP'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the latest hourly heat duty for E-205 in the 45-day fixture? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "E-205",
+      "unit": "FCC",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 8.01296,
+      "unit": "MW",
+      "explanation": "Rising differential pressure and falling heat duty suggest fouling; verify operating conditions."
+    },
+    "metadata": {
+      "case_id": "case-10",
+      "reference_sql": "SELECT value FROM sensor_readings WHERE tag_id='E-205-DUTY' ORDER BY timestamp DESC LIMIT 1",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the earliest hourly heat duty for E-205 in the 45-day fixture? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "E-205",
+      "unit": "FCC",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 12.01594,
+      "unit": "MW",
+      "explanation": "Rising differential pressure and falling heat duty suggest fouling; verify operating conditions."
+    },
+    "metadata": {
+      "case_id": "case-11",
+      "reference_sql": "SELECT value FROM sensor_readings WHERE tag_id='E-205-DUTY' ORDER BY timestamp ASC LIMIT 1",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the mean heat duty for E-205 over all 45 days? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "E-205",
+      "unit": "FCC",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 10.000147935185185,
+      "unit": "MW",
+      "explanation": "These are synthetic observations, not proof of fouling."
+    },
+    "metadata": {
+      "case_id": "case-12",
+      "reference_sql": "SELECT avg(value) FROM sensor_readings WHERE tag_id='E-205-DUTY'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many seal failures did C-301 have in the fixture? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "C-301",
+      "unit": "HDT",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 3.0,
+      "unit": "failures",
+      "explanation": "Three recorded seal failures share flush line contamination; investigate the flush system, not just repeated seal replacement."
+    },
+    "metadata": {
+      "case_id": "case-13",
+      "reference_sql": "SELECT count(*) FROM failure_events WHERE asset_id='C-301'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What total downtime did C-301 failures cause? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "C-301",
+      "unit": "HDT",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 27.0,
+      "unit": "hours",
+      "explanation": "Three recorded seal failures share flush line contamination; investigate the flush system, not just repeated seal replacement."
+    },
+    "metadata": {
+      "case_id": "case-14",
+      "reference_sql": "SELECT sum(downtime_hours) FROM failure_events WHERE asset_id='C-301'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What was mean downtime per C-301 failure? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "C-301",
+      "unit": "HDT",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 9.0,
+      "unit": "hours",
+      "explanation": "Three recorded seal failures share flush line contamination; investigate the flush system, not just repeated seal replacement."
+    },
+    "metadata": {
+      "case_id": "case-15",
+      "reference_sql": "SELECT avg(downtime_hours) FROM failure_events WHERE asset_id='C-301'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What was the longest C-301 failure downtime? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "C-301",
+      "unit": "HDT",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 10.0,
+      "unit": "hours",
+      "explanation": "Three recorded seal failures share flush line contamination; investigate the flush system, not just repeated seal replacement."
+    },
+    "metadata": {
+      "case_id": "case-16",
+      "reference_sql": "SELECT max(downtime_hours) FROM failure_events WHERE asset_id='C-301'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many C-301 failures list flush line contamination as root cause? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "C-301",
+      "unit": "HDT",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 3.0,
+      "unit": "failures",
+      "explanation": "Three recorded seal failures share flush line contamination; investigate the flush system, not just repeated seal replacement."
+    },
+    "metadata": {
+      "case_id": "case-17",
+      "reference_sql": "SELECT count(*) FROM failure_events WHERE asset_id='C-301' AND root_cause='flush line contamination'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many different root causes appear in C-301 failure records? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "C-301",
+      "unit": "HDT",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 1.0,
+      "unit": "causes",
+      "explanation": "Three recorded seal failures share flush line contamination; investigate the flush system, not just repeated seal replacement."
+    },
+    "metadata": {
+      "case_id": "case-18",
+      "reference_sql": "SELECT count(DISTINCT root_cause) FROM failure_events WHERE asset_id='C-301'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the latest K-401-PT-3 pressure in psi? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "K-401",
+      "unit": "FCC",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 123.44596994394,
+      "unit": "psi",
+      "explanation": "PT-3 is stored in bar and must be converted using 1 bar = 14.5037738 psi."
+    },
+    "metadata": {
+      "case_id": "case-19",
+      "reference_sql": "SELECT value * 14.5037738 FROM sensor_readings WHERE tag_id='K-401-PT-3' ORDER BY timestamp DESC LIMIT 1",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the mean over all 45 days K-401-PT-3 pressure in psi? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "K-401",
+      "unit": "FCC",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 123.28180602571224,
+      "unit": "psi",
+      "explanation": "PT-3 is stored in bar and must be converted using 1 bar = 14.5037738 psi."
+    },
+    "metadata": {
+      "case_id": "case-20",
+      "reference_sql": "SELECT avg(value) * 14.5037738 FROM sensor_readings WHERE tag_id='K-401-PT-3' ",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the maximum over all 45 days K-401-PT-3 pressure in psi? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "K-401",
+      "unit": "FCC",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 123.499053756048,
+      "unit": "psi",
+      "explanation": "PT-3 is stored in bar and must be converted using 1 bar = 14.5037738 psi."
+    },
+    "metadata": {
+      "case_id": "case-21",
+      "reference_sql": "SELECT max(value) * 14.5037738 FROM sensor_readings WHERE tag_id='K-401-PT-3' ",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the minimum over all 45 days K-401-PT-3 pressure in psi? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "K-401",
+      "unit": "FCC",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 123.06466573073801,
+      "unit": "psi",
+      "explanation": "PT-3 is stored in bar and must be converted using 1 bar = 14.5037738 psi."
+    },
+    "metadata": {
+      "case_id": "case-22",
+      "reference_sql": "SELECT min(value) * 14.5037738 FROM sensor_readings WHERE tag_id='K-401-PT-3' ",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What is the mean pressure across all three K-401 pressure tags over 45 days, in psi? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "K-401",
+      "unit": "FCC",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 121.09389681103988,
+      "unit": "psi",
+      "explanation": "Normalize each tag before averaging; one tag is bar and the other two are psi."
+    },
+    "metadata": {
+      "case_id": "case-23",
+      "reference_sql": "SELECT avg(r.value * CASE WHEN t.unit_of_measure='bar' THEN 14.5037738 ELSE 1 END) FROM sensor_readings r JOIN sensor_tags t USING(tag_id) WHERE t.asset_id='K-401'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How much greater is the latest K-401-PT-3 pressure than the latest K-401-PT-1 pressure, in psi? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "K-401",
+      "unit": "FCC",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 3.450489943939999,
+      "unit": "psi",
+      "explanation": "PT-3 must be converted from bar before subtracting PT-1 in psi."
+    },
+    "metadata": {
+      "case_id": "case-24",
+      "reference_sql": "SELECT (SELECT value*14.5037738 FROM sensor_readings WHERE tag_id='K-401-PT-3' ORDER BY timestamp DESC LIMIT 1) - (SELECT value FROM sensor_readings WHERE tag_id='K-401-PT-1' ORDER BY timestamp DESC LIMIT 1)",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many completed work orders support the P-102B seal replacement claimed by N-005? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-102B",
+      "unit": "CDU",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 0.0,
+      "unit": "orders",
+      "explanation": "N-005 claims the seal was replaced but WO-0005 was cancelled, so replacement is unverified."
+    },
+    "metadata": {
+      "case_id": "case-25",
+      "reference_sql": "SELECT count(*) FROM work_orders WHERE work_order_id='WO-0005' AND status='completed'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many cancelled orders are linked from note N-005 for P-102B? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-102B",
+      "unit": "CDU",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 1.0,
+      "unit": "orders",
+      "explanation": "N-005 claims the seal was replaced but WO-0005 was cancelled, so replacement is unverified."
+    },
+    "metadata": {
+      "case_id": "case-26",
+      "reference_sql": "SELECT count(*) FROM work_orders WHERE work_order_id='WO-0005' AND status='cancelled'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What cost is recorded on P-102B work order WO-0005? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-102B",
+      "unit": "CDU",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 0.0,
+      "unit": "unspecified",
+      "explanation": "N-005 claims the seal was replaced but WO-0005 was cancelled, so replacement is unverified."
+    },
+    "metadata": {
+      "case_id": "case-27",
+      "reference_sql": "SELECT cost FROM work_orders WHERE work_order_id='WO-0005'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "What labor hours are recorded on P-102B work order WO-0005? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-102B",
+      "unit": "CDU",
+      "requester_role": "operator"
+    },
+    "outputs": {
+      "value": 0.0,
+      "unit": "hours",
+      "explanation": "N-005 claims the seal was replaced but WO-0005 was cancelled, so replacement is unverified."
+    },
+    "metadata": {
+      "case_id": "case-28",
+      "reference_sql": "SELECT hours FROM work_orders WHERE work_order_id='WO-0005'",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many P-102B inspection notes literally mention replaced? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-102B",
+      "unit": "CDU",
+      "requester_role": "reliability_engineer"
+    },
+    "outputs": {
+      "value": 1.0,
+      "unit": "notes",
+      "explanation": "N-005 claims the seal was replaced but WO-0005 was cancelled, so replacement is unverified."
+    },
+    "metadata": {
+      "case_id": "case-29",
+      "reference_sql": "SELECT count(*) FROM inspection_notes WHERE asset_id='P-102B' AND instr(lower(note),'replaced')>0",
+      "synthetic": true
+    }
+  },
+  {
+    "inputs": {
+      "prompt": "How many work orders exist for P-102B, all statuses? Return one JSON object with keys value (number), unit (string), explanation (string), evidence (array of IDs). No report or work order.",
+      "asset": "P-102B",
+      "unit": "CDU",
+      "requester_role": "supervisor"
+    },
+    "outputs": {
+      "value": 8.0,
+      "unit": "orders",
+      "explanation": "N-005 claims the seal was replaced but WO-0005 was cancelled, so replacement is unverified."
+    },
+    "metadata": {
+      "case_id": "case-30",
+      "reference_sql": "SELECT count(*) FROM work_orders WHERE asset_id='P-102B'",
+      "synthetic": true
+    }
+  }
+]

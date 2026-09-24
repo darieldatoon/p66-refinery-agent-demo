@@ -58,7 +58,7 @@ markers = [
 addopts = "-m 'not live' --cov --cov-report=term-missing --cov-fail-under=100"
 
 [tool.coverage.run]
-source = ["refinery_data", "tools", "subagents", "models", "agent"]
+source = ["refinery_data", "tools", "subagents", "models", "agent", "middleware"]
 branch = true
 omit = ["scripts/*", "evals/*"]
 
