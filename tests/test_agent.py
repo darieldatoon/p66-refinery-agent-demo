@@ -32,6 +32,9 @@ def test_agent_wiring(monkeypatch):
         "get_asset",
         "draft_work_order",
         "publish_artifact",
+        "get_issue_evidence",
+        "record_issue_assessment",
+        "propose_issue_work",
     }
     assert {s["name"] for s in cast("Any", module.agent.config["subagents"])} == {
         "data-analyst",

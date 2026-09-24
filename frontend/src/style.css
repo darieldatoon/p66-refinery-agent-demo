@@ -1,0 +1,34 @@
+@import "@langchain/macaw-components/styles.css";
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .markdown {
+    @apply flex flex-col gap-space-2 leading-relaxed;
+  }
+  .markdown ul {
+    @apply list-disc pl-space-5;
+  }
+  .markdown ol {
+    @apply list-decimal pl-space-5;
+  }
+  .markdown li + li {
+    @apply mt-space-1;
+  }
+  .markdown strong {
+    @apply font-semibold;
+  }
+  .markdown a {
+    @apply text-link underline hover:text-link-hover;
+  }
+  .markdown code {
+    @apply rounded-xs bg-surface-level-3 px-space-1 font-mono text-xs;
+  }
+  .markdown table {
+    @apply w-full border-collapse text-xs;
+  }
+  .markdown th,
+  .markdown td {
+    @apply border border-muted px-space-2 py-space-1 text-left;
+  }
+}

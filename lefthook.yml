@@ -19,5 +19,6 @@ pre-commit:
 
 pre-push:
   commands:
-    tests:
-      run: uv run pytest -q
+    check:
+      # Same checks as CI's validate job.
+      run: mise run check

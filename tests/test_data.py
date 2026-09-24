@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -20,17 +21,18 @@ def test_seed_counts_and_repeatability(source, tmp_path):
         "assets": 40,
         "sensor_tags": 120,
         "sensor_readings": 129600,
-        "work_orders": 300,
-        "failure_events": 20,
-        "inspection_notes": 120,
-        "spare_parts": 50,
+        "work_orders": 131,
+        "failure_events": 6,
+        "inspection_notes": 47,
+        "spare_parts": 42,
     }.items():
         assert source.run_sql(f"SELECT count(*) AS n FROM {table}").rows[0]["n"] == count
     assert ensure_database(source.path) == source.path
-    with sqlite3.connect(other) as db:
+    with closing(sqlite3.connect(other)) as db, db:
+        db.execute("DELETE FROM work_orders")
         db.execute("PRAGMA user_version = 999")
-    with pytest.raises(ValueError, match="schema changed"):
-        ensure_database(other)
+    ensure_database(other)
+    assert other.read_bytes() == source.path.read_bytes()
 
 
 def test_atomic_seed_failure_cleans_up(tmp_path, monkeypatch):
@@ -72,6 +74,38 @@ def test_other_storylines(source):
     assert order.status == "cancelled"
     assert order.completed_at is None
     assert source.search_inspection_notes("P-102B", "%") == ()
+    assert source.search_inspection_notes("P-102B", "still visible")
+
+
+def test_records_fit_the_equipment(source):
+    rows = source.run_sql(
+        "SELECT a.equipment_type, t.measurement FROM sensor_tags t JOIN assets a USING(asset_id) "
+        "WHERE t.measurement = 'vibration' GROUP BY a.equipment_type"
+    ).rows
+    assert {row["equipment_type"] for row in rows} == {"pump", "compressor"}
+    bearing_failures = source.run_sql(
+        "SELECT count(*) AS n FROM failure_events f JOIN assets a USING(asset_id) "
+        "WHERE a.equipment_type IN ('column', 'exchanger') AND f.failure_mode LIKE '%bearing%'"
+    ).rows
+    assert bearing_failures[0]["n"] == 0
+    history = source.get_maintenance_history("P-101A")
+    assert not [order for order in history if order.status == "open"]
+    assert len({order.opened_at[:10] for order in history}) == len(history)
+
+
+def test_seal_flush_pressure_falls_before_each_c301_failure(source):
+    trend = next(
+        t
+        for t in source.get_sensor_trend("C-301")
+        if t.tag.measurement == "seal_flush_differential_pressure"
+    )
+    daily = {point.timestamp: point for point in trend.points}
+    for failure in source.run_sql(
+        "SELECT occurred_at FROM failure_events WHERE asset_id='C-301'"
+    ).rows:
+        day = str(failure["occurred_at"])[:10]
+        assert daily[day].minimum < trend.tag.alarm_low
+    assert trend.points[-1].value < trend.points[-6].value
 
 
 @pytest.mark.parametrize(

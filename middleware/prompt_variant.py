@@ -16,6 +16,9 @@ LEAD_PRESSURE_GUIDANCE = (
 @dataclass(frozen=True)
 class DemoContext:
     prompt_variant: Literal["baseline", "v2-prompt-cleanup"] = "baseline"
+    operation: Literal["chat", "workspace"] = "chat"
+    issue_id: str | None = None
+    asset_id: str | None = None
 
 
 @dynamic_prompt
@@ -24,4 +27,12 @@ def demo_prompt_variant(request: ModelRequest[Any]) -> str:
     prompt = request.system_message.text if request.system_message else ""
     if context.prompt_variant == "v2-prompt-cleanup":
         return prompt.replace(PRESSURE_GUIDANCE, "").replace(LEAD_PRESSURE_GUIDANCE, "")
+    if context.issue_id:
+        return prompt + (
+            f"\nCurrent workspace issue: {context.issue_id}. Fetch get_issue_evidence first. "
+            "To investigate, consult both specialists, then save conclusions with "
+            "record_issue_assessment. Use propose_issue_work for work on this issue; it "
+            "pauses for review and persists both decisions. Do not use draft_work_order for "
+            "issue work. Propose work or create a report only when the operator asks."
+        )
     return prompt
