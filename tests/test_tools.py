@@ -11,7 +11,7 @@ from refinery_data.domain import (
     SensorTrend,
     WorkOrder,
 )
-from refinery_data.source import RefineryDataSource
+from refinery_data.source import RefineryDataSource, SqliteRefineryDataSource
 from tools import build_tools
 
 
@@ -105,3 +105,17 @@ def test_draft_is_repeatable_and_does_not_submit(fake):
 def test_bad_lookup_returns_recoverable_tool_error(fake):
     fake.get_asset.side_effect = ValueError("Unknown asset: K-401-PT-3; use an asset tag")
     assert "Unknown asset" in build_tools(fake).get_asset.invoke({"asset_id": "K-401-PT-3"})
+
+
+def test_sensor_tag_resolves_to_parent_asset(tmp_path):
+    tools = build_tools(SqliteRefineryDataSource(tmp_path / "refinery.db"))
+    result = tools.get_asset.invoke({"asset_id": "K-401-PT-3"})
+    assert result["asset_id"] == "K-401"
+    assert result["resolved_from_tag"] == "K-401-PT-3"
+
+
+def test_unknown_asset_returns_tool_message(tmp_path):
+    tools = build_tools(SqliteRefineryDataSource(tmp_path / "refinery.db"))
+    result = tools.get_asset.invoke({"asset_id": "bogus"})
+    assert "Unknown asset or sensor tag: bogus" in result
+    assert "K-401" in result
